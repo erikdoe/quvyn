@@ -7,3 +7,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+getopts = "0.2"
+gotham = "0.4"
+gotham_derive = "*"
+hyper = "0.12"
+mime = "0.3"
