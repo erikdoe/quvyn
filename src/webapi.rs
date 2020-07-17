@@ -23,3 +23,4 @@ fn get_ping(state: State) -> (State, Response<Body>) {
     let response = create_response(&state, StatusCode::OK, mime::APPLICATION_JSON, body);
     (state, response)
 }
+

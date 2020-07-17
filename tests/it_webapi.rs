@@ -4,12 +4,10 @@ extern crate hyper;
 extern crate serde_json;
 
 use std::str;
-
 use gotham::test::{TestClient, TestResponse, TestServer};
-use serde_json::{Map, Value};
-
-use quvyn::{webapi, utils};
 use gotham::plain::test::TestConnect;
+use serde_json::{Map, Value};
+use quvyn::{webapi, utils};
 
 
 fn client() -> TestClient<TestServer, TestConnect> {
@@ -37,4 +35,3 @@ fn it_can_ping_api() {
     let obj = as_json_obj(response);
     assert_eq!("ok", obj.get("status").unwrap());
 }
-
