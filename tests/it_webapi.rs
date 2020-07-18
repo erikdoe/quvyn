@@ -33,8 +33,8 @@ fn as_json_obj(response: TestResponse) -> Map<String, Value> {
 
 
 #[test]
-fn it_can_ping_api() {
-    let client = client(repo("it_can_ping_api"));
+fn it_ping_api() {
+    let client = client(repo("it_ping_api"));
 
     let response = client.get(&url("/ping")).perform().unwrap();
 
@@ -44,8 +44,8 @@ fn it_can_ping_api() {
 }
 
 #[test]
-fn it_can_get_all_comments() {
-    let mut repo = repo("it_can_get_all_comments");
+fn it_get_all_comments() {
+    let mut repo = repo("it_get_all_comments");
     repo.save_comment(&Comment::new("/", "First comment"));
     repo.save_comment(&Comment::new("/", "Second comment"));
     let client = client(repo);
@@ -53,10 +53,33 @@ fn it_can_get_all_comments() {
     let response = client.get(&url("/comments")).perform().unwrap();
 
     assert_eq!(response.status(), 200);
-    let obj = as_json_obj(response);
-    assert_eq!(2, obj
+    let comments = as_json_obj(response)
         .get("comments").expect("expected comments field")
-        .as_array().expect("expected comments to be an array").len());
+        .as_array().expect("expected comments to be an array")
+        .clone();
+    assert_eq!(comments.len(), 2);
 }
 
+#[test]
+fn it_get_comments_for_topic() {
+    let mut repo = repo("it_get_comments_for_topic");
+    repo.save_comment(&Comment::new("/1/", "First comment"));
+    repo.save_comment(&Comment::new("/2/", "Second comment"));
+    repo.save_comment(&Comment::new("/2/", "Third comment"));
+    repo.save_comment(&Comment::new("/3/", "Fourth comment"));
+    let client = client(repo);
+
+    let response = client.get(&url("/comments?p=%2F2%2F")).perform().unwrap();
+
+    assert_eq!(response.status(), 200);
+    let comments = as_json_obj(response)
+        .get("comments").expect("expected comments field")
+        .as_array().expect("expected comments to be an array")
+        .clone();
+    assert_eq!(comments.len(), 2);
+    let content = comments[0]
+        .get("content").expect("expected content field")
+        .as_str().expect("expected conversion to str to succeed");
+    assert_eq!(content, "Second comment");
+}
 

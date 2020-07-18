@@ -7,7 +7,7 @@ pub mod webapi;
 
 pub fn run(repo_path: &str)
 {
-    let repo = CommentRepository::new(repo_path, false);
-    let addr = format!("{}:{}", "localhost", 8080);
-    webapi::run(repo, addr);
+    let repository = CommentRepository::new(repo_path, false);
+    let address = format!("{}:{}", "localhost", 8080);
+    webapi::run(repository, address);
 }

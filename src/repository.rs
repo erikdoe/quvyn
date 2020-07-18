@@ -38,8 +38,12 @@ impl CommentRepository {
       }
    }
 
-   pub fn all_comments(&self) -> &Vec<Comment> {
-      &self.comments
+   pub fn all_comments(&self) -> Vec<&Comment> {
+      self.comments.iter().collect() // TODO: there must be a better way...
+   }
+
+   pub fn comments_for_path(&self, path: &str) -> Vec<&Comment> {
+      self.comments.iter().filter(|c| c.path == path).collect()
    }
 
    pub fn add_comment(&mut self, comment: &Comment) {
@@ -86,9 +90,9 @@ impl CommentRepository {
 
    fn path_for_comment(&self, comment: &Comment) -> String
    {
-      // we assume topic id is sanitised to include slashes and no query parameters and anchors
+      // we assume path is sanitised to include slashes and no query parameters and anchors
       let regex = Regex::new(r"[^0-9A-Za-z/-]").unwrap();
-      let safe_id = regex.replace_all(&comment.topic_id, "");
+      let safe_id = regex.replace_all(&comment.path, "");
       format!("{}{}", self.root, safe_id)
    }
 
@@ -127,13 +131,24 @@ mod tests {
    }
 
    #[test]
+   fn path_specific_list_contains_comments_for_path() {
+      let mut repository = CommentRepository::for_testing();
+      repository.add_comment(&Comment::new("/test-topic/", "First comment"));
+      repository.add_comment(&Comment::new("/something-else/", "Second comment"));
+
+      let list = repository.comments_for_path("/test-topic/");
+
+      assert_eq!(list.len(), 1);
+   }
+
+   #[test]
    fn storage_path_for_comment_concatenates_core_parts() {
       let repository = CommentRepository::for_testing();
       let comment = Comment::new("/test-topic/", "Test");
 
       let path = repository.path_for_comment(&comment);
 
-      assert_eq!("/r/test-topic/", path);
+      assert_eq!(path, "/r/test-topic/");
    }
 
    #[test]
@@ -143,7 +158,7 @@ mod tests {
 
       let path = repository.path_for_comment(&comment);
 
-      assert_eq!("/r/test/", path);
+      assert_eq!(path, "/r/test/");
    }
 
    #[test]
@@ -153,7 +168,7 @@ mod tests {
 
       let path = repository.filename_for_comment(&comment);
 
-      assert_eq!(format!("/r/test-topic/{}.json", calculate_hash(&comment.content)), path);
+      assert_eq!(path, format!("/r/test-topic/{}.json", calculate_hash(&comment.content)));
 
    }
 

@@ -6,7 +6,7 @@ use crate::utils;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Comment
 {
-    pub topic_id: String,
+    pub path: String,
     pub author_name: Option<String>,
     pub author_email: Option<String>,
     pub content: String
@@ -15,9 +15,9 @@ pub struct Comment
 
 impl Comment
 {
-    pub fn new(topic_id: &str, content: &str) -> Comment {
+    pub fn new(path: &str, content: &str) -> Comment {
         Comment {
-            topic_id: topic_id.to_owned(),
+            path: path.to_owned(),
             author_name: None,
             author_email: None,
             content: content.to_owned()
@@ -43,11 +43,11 @@ mod tests {
     #[test]
     fn creates_comment_from_json() {
         let comment = Comment::from_json(r#"{
-                "topic_id": "/test/",
+                "path": "/test/",
                 "content": "This is a comment."
             }"#);
 
-        assert_eq!("/test/", comment.topic_id);
+        assert_eq!("/test/", comment.path);
         assert_eq!("This is a comment.", comment.content);
     }
 
@@ -58,6 +58,6 @@ mod tests {
         let json = comment.to_json();
 
         // make sure it looks like pretty printed json
-        assert_eq!("{\n  \"topic_id\": \"/te", &json[..20]);
+        assert_eq!("{\n  \"path\": \"/t", &json[..15]);
     }
 }
