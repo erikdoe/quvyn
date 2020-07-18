@@ -10,7 +10,7 @@ fn main() {
     let program = args[0].clone();
 
     let mut opts = Options::new();
-//    opts.optopt("o", "", "set output file name", "NAME");
+    opts.optopt("p", "path", "set path for repository", "PATH");
     opts.optflag("h", "help", "print this help menu");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
@@ -20,7 +20,9 @@ fn main() {
         print_usage(&program, opts);
         return;
     }
-    quvyn::run(matches.free);
+    let path = matches.opt_get_default("p", String::from("/var/lib/quvyn/repository")).unwrap();
+
+    quvyn::run(&path);
 }
 
 

@@ -18,17 +18,13 @@ pub struct CommentRepository {
 
 impl CommentRepository {
 
-   pub fn new(storage_path: &str) -> CommentRepository {
-      // TODO: make sure path exists and is writable
-      CommentRepository {
-         root: storage_path.to_owned(),
-         comments: vec![]
+   pub fn new(path: &str, reset: bool) -> CommentRepository {
+      if reset {
+         CommentRepository::remove_storage_directory(path);
       }
-   }
-
-   pub fn for_testing() -> CommentRepository {
+      CommentRepository::create_storage_directory(path);
       CommentRepository {
-         root: "/r".to_owned(),
+         root: path.to_owned(),
          comments: vec![]
       }
    }
@@ -46,11 +42,32 @@ impl CommentRepository {
       &self.comments
    }
 
-   pub fn save_comment(&self, comment: &Comment) {
+   pub fn add_comment(&mut self, comment: &Comment) {
+      self.comments.push(comment.clone());
+   }
+
+   pub fn save_comment(&mut self, comment: &Comment) {
       let path = self.path_for_comment(&comment);
       fs::create_dir_all(path).expect("Unable to create storage directory");
       let filename = self.filename_for_comment(&comment);
       CommentRepository::save_comment_to_file(comment, &filename);
+      self.add_comment(comment); // TODO: there is no test to check that this happens after saving
+   }
+
+
+   // helper functions to interact with file system; maybe should move into their own module
+
+   fn create_storage_directory(path: &str) {
+      fs::create_dir_all(path).expect(&format!("Unable to create directory at {}", path)); // TODO: expect
+   }
+
+   fn remove_storage_directory(path: &str) {
+      if fs::metadata(path).is_ok() {
+         match fs::remove_dir_all(path) {
+            Ok(_) => {}
+            Err(error) => { panic!("Failed to remove storage directory at {}: {}", path, error) }
+         }
+      }
    }
 
    fn load_comment_from_file(filename: &str) -> Comment {
@@ -87,6 +104,27 @@ impl CommentRepository {
 #[cfg(test)]
 mod tests {
    use super::*;
+
+   impl CommentRepository {
+      fn for_testing() -> CommentRepository {
+         CommentRepository {
+            root: "/r".to_owned(),
+            comments: vec![]
+         }
+      }
+   }
+
+
+   #[test]
+   fn adding_comment_makes_it_available_in_list() {
+      let mut repository = CommentRepository::for_testing();
+      let comment = Comment::new("/test-topic/", "Test");
+      repository.add_comment(&comment);
+
+      let list = repository.all_comments();
+
+      assert_eq!(1, list.len());
+   }
 
    #[test]
    fn storage_path_for_comment_concatenates_core_parts() {
