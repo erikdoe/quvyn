@@ -10,8 +10,8 @@ fn main() {
     let program = args[0].clone();
 
     let mut opts = Options::new();
-    opts.optopt("p", "path", "set path for repository", "PATH");
-    opts.optflag("h", "help", "print this help menu");
+    opts.optopt("p", "path", "Specify path for the repository. Without this option the repository is stored in /var/lib/quvyn/repository.", "PATH");
+    opts.optflag("h", "help", "Display this help message");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
         Err(f) => { panic!(f.to_string()) }
