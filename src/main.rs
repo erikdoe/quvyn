@@ -1,9 +1,9 @@
-extern crate quvyn;
 extern crate getopts;
+extern crate quvyn;
 
-use getopts::Options;
 use std::env;
 
+use getopts::Options;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

@@ -8,7 +8,7 @@ pub mod webapi;
 pub fn run(repo_path: &str)
 {
     let mut repository = CommentRepository::new(repo_path, false);
-    repository.load_comments();
+    repository.load_all_comments();
     let address = format!("{}:{}", "localhost", 8080);
     webapi::run(repository, address);
 }

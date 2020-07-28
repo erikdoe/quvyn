@@ -14,7 +14,6 @@ use serde_json::to_string;
 use crate::comment::Comment;
 use crate::repository::CommentRepository;
 
-
 pub fn run(repo: CommentRepository, addr: String) {
     println!("Listening for requests at http://{}", addr);
     gotham::start(addr, router(repo));
@@ -62,7 +61,7 @@ fn get_comments(mut state: State) -> (State, Response<Body>) {
 
     let comments = match query_param.p {
         Some(p) => repository.comments_for_path(&p),
-        None    => repository.all_comments()
+        None => repository.all_comments()
     };
 
     let response_obj = CommentListWrapper { comments };

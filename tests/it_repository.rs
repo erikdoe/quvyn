@@ -18,7 +18,7 @@ fn it_stores_and_retrieves_comment() {
     repo1.save_comment(&original);
 
     let mut repo2 = repo("it_stores_and_retrieves_comment", false);
-    repo2.load_comments();
+    repo2.load_all_comments();
     let comments = repo2.all_comments();
 
     assert_eq!(1, comments.len());
