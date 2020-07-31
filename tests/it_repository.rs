@@ -17,7 +17,7 @@ fn it_stores_and_retrieves_comment() {
     let original = Comment::new("/some-topic/", "Nice work!");
     repo1.save_comment(&original);
 
-    let mut repo2 = repo("it_stores_and_retrieves_comment", false);
+    let repo2 = repo("it_stores_and_retrieves_comment", false);
     repo2.load_all_comments();
     let comments = repo2.all_comments();
 

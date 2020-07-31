@@ -61,7 +61,7 @@ impl CommentRepository {
         fs::remove_dir_all(&self.path).expect(&format!("Failed to remove directory at {}", &self.path));
     }
 
-    pub fn load_all_comments(&mut self) {
+    pub fn load_all_comments(&self) {
         for entry in glob(&format!("{}/**/*.json", self.path)).unwrap() {
             match entry {
                 Ok(path) => self.load_comment(&path.display().to_string()),
@@ -70,7 +70,7 @@ impl CommentRepository {
         }
     }
 
-    pub fn load_comment(&mut self, path: &str) {
+    pub fn load_comment(&self, path: &str) {
         println!("Loading comment from file: {}", path);
         let mut file = File::open(path).expect(&format!("Failed to open file {}", path));
         let mut contents = String::new();
