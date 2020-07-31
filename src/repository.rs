@@ -7,21 +7,22 @@ use gotham_derive::*;
 use regex::Regex;
 
 use crate::comment::Comment;
-use crate::utils;
 use crate::utils::calculate_hash;
+use std::sync::{Mutex, Arc};
+use std::borrow::BorrowMut;
 
 #[derive(Clone, StateData)]
 pub struct CommentRepository {
     path: String,
-    comments: Vec<Comment>,
+    comments: Arc<Mutex<Vec<Comment>>>,
 }
 
 
 impl CommentRepository {
-    pub fn new(path: &str, reset: bool) -> CommentRepository {
-        let repo = CommentRepository {
+    pub fn new(path: &str, reset: bool) -> Self {
+        let repo = Self {
             path: path.to_owned(),
-            comments: vec![],
+            comments: Arc::new(Mutex::new(Vec::new())),
         };
         if reset {
             repo.remove_storage_directory();
@@ -30,16 +31,22 @@ impl CommentRepository {
         repo
     }
 
-    pub fn all_comments(&self) -> Vec<&Comment> {
-        self.comments.iter().collect() // TODO: there must be a better way...
+    pub fn all_comments(&self) -> Vec<Comment> {
+        let mut guard = self.comments.lock().unwrap();
+        guard.borrow_mut().clone()
+        // self.comments.iter().collect() // TODO: there must be a better way...
     }
 
-    pub fn comments_for_path(&self, path: &str) -> Vec<&Comment> {
-        self.comments.iter().filter(|c| c.path == path).collect()
+    pub fn comments_for_path(&self, path: &str) -> Vec<Comment> {
+        let mut guard = self.comments.lock().unwrap();
+        let list = guard.borrow_mut().clone();
+        list.iter().filter(|c| c.path == path).map(|c| c.clone()).collect()
     }
 
-    pub fn add_comment(&mut self, comment: &Comment) {
-        self.comments.push(comment.clone());
+    pub fn add_comment(&self, comment: &Comment) {
+        let mut guard = self.comments.lock().unwrap();
+        let list = guard.borrow_mut();
+        list.push(comment.clone());
     }
 
     fn create_storage_directory(&self) {
@@ -67,17 +74,17 @@ impl CommentRepository {
         let mut file = File::open(path).expect(&format!("Failed to open file {}", path));
         let mut contents = String::new();
         file.read_to_string(&mut contents).expect(&format!("Failed to read file {}", path));
-        let comment = utils::from_json(&contents);
-        self.comments.push(comment);
+        let comment = Comment::from_json(&contents);
+        self.add_comment(&comment);
     }
 
-    pub fn save_comment(&mut self, comment: &Comment) {
+    pub fn save_comment(&self, comment: &Comment) {
         let path = self.path_for_comment(&comment);
         fs::create_dir_all(&path).expect(&format!("Failed to create directory at {}", &path));
         let filename = self.filename_for_comment(&comment);
         println!("Saving comment to file: {}", filename);
         let mut file = File::create(&filename).expect(&format!("Failed to create file {}", &filename));
-        let _result = file.write_all(utils::to_json(&comment).as_ref());
+        let _result = file.write_all(comment.to_json().as_ref());
         self.add_comment(comment); // TODO: there is no test to check that this happens after saving
     }
 
@@ -102,14 +109,14 @@ mod tests {
         fn for_testing() -> CommentRepository {
             CommentRepository {
                 path: "/r".to_owned(),
-                comments: vec![],
+                comments: Arc::new(Mutex::new(Vec::new()))
             }
         }
     }
 
     #[test]
     fn adding_comment_makes_it_available_in_list() {
-        let mut repository = CommentRepository::for_testing();
+        let repository = CommentRepository::for_testing();
         let comment = Comment::new("/test-topic/", "Test");
         repository.add_comment(&comment);
 
@@ -120,7 +127,7 @@ mod tests {
 
     #[test]
     fn path_specific_list_contains_comments_for_path() {
-        let mut repository = CommentRepository::for_testing();
+        let repository = CommentRepository::for_testing();
         repository.add_comment(&Comment::new("/test-topic/", "First comment"));
         repository.add_comment(&Comment::new("/something-else/", "Second comment"));
 
