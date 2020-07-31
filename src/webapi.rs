@@ -1,3 +1,4 @@
+use gotham::handler::HandlerFuture;
 use gotham::helpers::http::response::create_response;
 use gotham::middleware::state::StateMiddleware;
 use gotham::pipeline;
@@ -7,15 +8,12 @@ use gotham::router::Router;
 use gotham::state::{FromState, State};
 use gotham_derive::*;
 use hyper::{Body, Response, StatusCode, Uri};
-use serde::Serialize;
+use hyper::rt::{Future};
 use serde_derive::*;
-use serde_json::{to_string, Value};
 
 use crate::comment::Comment;
+use crate::gotham_json::{create_json_response, JSONBody};
 use crate::repository::CommentRepository;
-use gotham::handler::HandlerFuture;
-use hyper::rt::{Stream, Future};
-use futures::future;
 
 pub fn run(repo: CommentRepository, addr: String) {
     println!("Listening for requests at http://{}", addr);
@@ -74,41 +72,16 @@ fn get_comments(mut state: State) -> (State, Response<Body>) {
     (state, response)
 }
 
-fn post_comment(mut state: State) -> Box<HandlerFuture> {
-    let f = Body::take_from(&mut state).concat2().then(|full_body| {
-        // TODO: consider adding explicit error handling for body and UTF-8 problems
-        let body_content = String::from_utf8(full_body.unwrap().to_vec()).unwrap();
-        let _ = Comment::from_json(&body_content);
-        let response = match serde_json::from_str::<Value>(&body_content) {
-            Ok(_) => {
-                // TODO:
-                // We're not using the parsed objects, just parsing first to ensure in a
-                // controlled way that the string is parsable. Maybe we should actually use
-                // the parsed attributes?
-                let comment = Comment::from_json(&body_content);
-                let repo = CommentRepository::borrow_from(&state);
-                repo.save_comment(&comment);
-                create_post_ok_response(&state, true)
-            }
-            Err(error) => {
-                let body = format!("Error parsing JSON document: {}\n", error);
-                create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, body)
-            }
-        };
-        future::ok((state, response))
-    });
-    Box::new(f)
+
+fn post_comment(state: State) -> Box<HandlerFuture> {
+    Box::new(state.json::<Comment>().and_then(|(state, comment)| {
+        let repo = CommentRepository::borrow_from(&state);
+        repo.save_comment(&comment);
+        let response = create_post_ok_response(&state, true);
+        Ok((state, response))
+    }))
 }
 
-// see https://github.com/ChristophWurst/gotham-serde-json-body-parser/blob/master/src/lib.rs
-
-pub fn create_json_response<S: Serialize>(state: &State, status: StatusCode, data: &S)
-                                          -> Result<Response<Body>, serde_json::Error> {
-    to_string(data).map(|json_str| {
-        create_response(state, status, mime::APPLICATION_JSON, json_str.into_bytes(),
-        )
-    })
-}
 
 fn create_post_ok_response(state: &State, created: bool) -> Response<Body> {
     let (status, response_body) = if created {

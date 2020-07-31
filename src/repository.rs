@@ -10,6 +10,7 @@ use crate::comment::Comment;
 use crate::utils::calculate_hash;
 use std::sync::{Mutex, Arc};
 use std::borrow::BorrowMut;
+use crate::utils;
 
 #[derive(Clone, StateData)]
 pub struct CommentRepository {
@@ -74,7 +75,7 @@ impl CommentRepository {
         let mut file = File::open(path).expect(&format!("Failed to open file {}", path));
         let mut contents = String::new();
         file.read_to_string(&mut contents).expect(&format!("Failed to read file {}", path));
-        let comment = Comment::from_json(&contents);
+        let comment = utils::from_json(&contents);
         self.add_comment(&comment);
     }
 
@@ -84,7 +85,7 @@ impl CommentRepository {
         let filename = self.filename_for_comment(&comment);
         println!("Saving comment to file: {}", filename);
         let mut file = File::create(&filename).expect(&format!("Failed to create file {}", &filename));
-        let _result = file.write_all(comment.to_json().as_ref());
+        let _result = file.write_all(utils::to_json(comment).as_ref());
         self.add_comment(comment); // TODO: there is no test to check that this happens after saving
     }
 
