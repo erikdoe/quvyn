@@ -14,7 +14,7 @@ fn repo(test_name: &str, reset: bool) -> CommentRepository {
 fn it_stores_and_retrieves_comment() {
 
     let repo1 = repo("it_stores_and_retrieves_comment", true);
-    let original = Comment::new("/some-topic/", "Nice work!");
+    let original = Comment::new("/some-topic/", "Nice work!", None, None);
     repo1.save_comment(&original);
 
     let repo2 = repo("it_stores_and_retrieves_comment", false);
@@ -29,7 +29,7 @@ fn it_stores_and_retrieves_comment() {
 fn it_saving_a_comment_adds_it_to_the_list() {
 
     let repo = repo("it_saving_a_comment_adds_it_to_the_list", true);
-    let original = Comment::new("/some-topic/", "Nice work!");
+    let original = Comment::new("/some-topic/", "Nice work!", None, None);
     repo.save_comment(&original);
 
     let comments = repo.all_comments();

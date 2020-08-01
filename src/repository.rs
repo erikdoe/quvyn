@@ -4,13 +4,13 @@ use std::io::{Read, Write};
 
 use glob::glob;
 use gotham_derive::*;
-use regex::Regex;
 
 use crate::comment::Comment;
-use crate::utils::calculate_hash;
 use std::sync::{Mutex, Arc};
 use std::borrow::BorrowMut;
 use crate::utils;
+use std::path::Path;
+use uuid::Uuid;
 
 #[derive(Clone, StateData)]
 pub struct CommentRepository {
@@ -35,12 +35,18 @@ impl CommentRepository {
     pub fn all_comments(&self) -> Vec<Comment> {
         let mut guard = self.comments.lock().unwrap();
         guard.borrow_mut().clone()
-        // self.comments.iter().collect() // TODO: there must be a better way...
+    }
+
+    pub fn comment_with_id(&self, id: Uuid) -> Option<Comment> {
+        let mut guard = self.comments.lock().unwrap();
+        let list = guard.borrow_mut();
+        list.iter().filter(|c| c.id == id).map(|c| c.clone()).last() // TODO: improve
+
     }
 
     pub fn comments_for_path(&self, path: &str) -> Vec<Comment> {
         let mut guard = self.comments.lock().unwrap();
-        let list = guard.borrow_mut().clone();
+        let list = guard.borrow_mut();
         list.iter().filter(|c| c.path == path).map(|c| c.clone()).collect()
     }
 
@@ -62,43 +68,31 @@ impl CommentRepository {
     }
 
     pub fn load_all_comments(&self) {
-        for entry in glob(&format!("{}/**/*.json", self.path)).unwrap() {
+        for entry in glob(&format!("{}/*.json", self.path)).unwrap() {
             match entry {
-                Ok(path) => self.load_comment(&path.display().to_string()),
+                Ok(path) => self.load_comment(&path),
                 Err(_) => {} // TODO
             }
         }
     }
 
-    pub fn load_comment(&self, path: &str) {
-        println!("Loading comment from file: {}", path);
-        let mut file = File::open(path).expect(&format!("Failed to open file {}", path));
+    pub fn load_comment(&self, path: &Path) {
+        println!("Loading comment from file: {}", path.display());
+        let mut file = File::open(path).expect(&format!("Failed to open file {}", path.display()));
         let mut contents = String::new();
-        file.read_to_string(&mut contents).expect(&format!("Failed to read file {}", path));
+        file.read_to_string(&mut contents).expect(&format!("Failed to read file {}", path.display()));
         let comment = utils::from_json(&contents);
         self.add_comment(&comment);
     }
 
     pub fn save_comment(&self, comment: &Comment) {
-        let path = self.path_for_comment(&comment);
-        fs::create_dir_all(&path).expect(&format!("Failed to create directory at {}", &path));
-        let filename = self.filename_for_comment(&comment);
+        let filename = format!("{}/{}.json", self.path, comment.id.to_simple());
         println!("Saving comment to file: {}", filename);
         let mut file = File::create(&filename).expect(&format!("Failed to create file {}", &filename));
         let _result = file.write_all(utils::to_json(comment).as_ref());
         self.add_comment(comment); // TODO: there is no test to check that this happens after saving
     }
 
-    fn path_for_comment(&self, comment: &Comment) -> String {
-        // we assume path is sanitised to include slashes and no query parameters and anchors
-        let regex = Regex::new(r"[^0-9A-Za-z/-]").unwrap();
-        let safe_path = regex.replace_all(&comment.path, "");
-        format!("{}{}", self.path, safe_path)
-    }
-
-    fn filename_for_comment(&self, comment: &Comment) -> String {
-        format!("{}{}.json", self.path_for_comment(comment), calculate_hash(&comment))
-    }
 }
 
 
@@ -118,52 +112,38 @@ mod tests {
     #[test]
     fn adding_comment_makes_it_available_in_list() {
         let repository = CommentRepository::for_testing();
-        let comment = Comment::new("/test-topic/", "Test");
+        let comment = Comment::new("/test-topic/", "Test", None, None);
+        
         repository.add_comment(&comment);
-
         let list = repository.all_comments();
 
         assert_eq!(1, list.len());
     }
 
     #[test]
-    fn path_specific_list_contains_comments_for_path() {
+    fn comment_can_be_retrieved_by_id() {
         let repository = CommentRepository::for_testing();
-        repository.add_comment(&Comment::new("/test-topic/", "First comment"));
-        repository.add_comment(&Comment::new("/something-else/", "Second comment"));
+        let new_comment = Comment::new("/test-topic/", "Test", None, None);
+        repository.add_comment(&new_comment);
+
+        let result = repository.comment_with_id(new_comment.id);
+
+        let returned_comment = result.expect("expected a comment");
+        assert_eq!(returned_comment.id, new_comment.id);
+        assert_eq!(returned_comment.content, "Test");
+    }
+
+    #[test]
+    fn comments_can_be_retrieved_by_path() {
+        let repository = CommentRepository::for_testing();
+        repository.add_comment(&Comment::new("/test-topic/", "First comment", None, None));
+        repository.add_comment(&Comment::new("/something-else/", "Second comment", None, None));
 
         let list = repository.comments_for_path("/test-topic/");
 
         assert_eq!(list.len(), 1);
+        assert_eq!(list[0].content, "First comment");
     }
 
-    #[test]
-    fn storage_path_for_comment_concatenates_core_parts() {
-        let repository = CommentRepository::for_testing();
-        let comment = Comment::new("/test-topic/", "Test");
 
-        let path = repository.path_for_comment(&comment);
-
-        assert_eq!(path, "/r/test-topic/");
-    }
-
-    #[test]
-    fn storage_path_for_comment_removes_non_ascii_chars() {
-        let repository = CommentRepository::for_testing();
-        let comment = Comment::new("/t&*e#öst/", "Test");
-
-        let path = repository.path_for_comment(&comment);
-
-        assert_eq!(path, "/r/test/");
-    }
-
-    #[test]
-    fn filename_for_comment_is_comment_hash() {
-        let repository = CommentRepository::for_testing();
-        let comment = Comment::new("/test-topic/", "Test");
-
-        let path = repository.filename_for_comment(&comment);
-
-        assert_eq!(path, format!("/r/test-topic/{}.json", calculate_hash(&comment)));
-    }
-}
+ }

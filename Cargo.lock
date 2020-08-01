@@ -385,7 +385,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "url 1.7.2",
- "uuid",
+ "uuid 0.7.4",
 ]
 
 [[package]]
@@ -946,6 +946,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+ "uuid 0.8.1",
 ]
 
 [[package]]
@@ -1255,6 +1256,9 @@ name = "serde"
 version = "1.0.114"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5317f7588f0a5078ee60ef675ef96735a1442132dc645eb1d12c018620ed8cd3"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_derive"
@@ -1732,6 +1736,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90dbc611eb48397705a6b0f6e917da23ae517e4d127123d2cf7674206627d32a"
 dependencies = [
  "rand 0.6.5",
+]
+
+[[package]]
+name = "uuid"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fde2f6a4bea1d6e007c4ad38c6839fa71cbb63b6dbf5b595aa38dc9b1093c11"
+dependencies = [
+ "rand 0.7.3",
+ "serde",
 ]
 
 [[package]]

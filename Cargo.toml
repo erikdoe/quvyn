@@ -12,6 +12,7 @@ getopts = "0.2"
 gotham = "0.4"
 gotham_derive = "*"
 ammonia = "3.1"
+uuid = { version = "0.8", features = ["v4", "serde"] }
 
 hyper = "0.12"
 mime = "0.3"
