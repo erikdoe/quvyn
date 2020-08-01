@@ -4,8 +4,6 @@ version = "0.1.0"
 authors = ["Erik Doernenburg <erik@doernenburg.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 serde = "1.0"
 serde_json = "1.0"
@@ -13,9 +11,12 @@ serde_derive = "1.0"
 getopts = "0.2"
 gotham = "0.4"
 gotham_derive = "*"
+ammonia = "3.1"
+
 hyper = "0.12"
 mime = "0.3"
 regex = "1.3"
 glob = "0.3"
 futures = "0.1"
 failure = "0.1"
+pulldown-cmark = "0.7"

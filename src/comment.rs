@@ -1,5 +1,7 @@
 use serde_derive::*;
 
+use crate::markdown::md_to_html;
+
 #[derive(Clone, Debug, Serialize, Deserialize, Hash)]
 pub struct Comment
 {
@@ -7,6 +9,7 @@ pub struct Comment
     pub author_name: Option<String>,
     pub author_email: Option<String>,
     pub content: String,
+    pub content_html: Option<String>,
 }
 
 
@@ -18,7 +21,7 @@ impl Comment
             author_name: None,
             author_email: None,
             content: content.to_owned(),
+            content_html: Some(md_to_html(content)),
         }
     }
-
 }

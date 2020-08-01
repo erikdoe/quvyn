@@ -1,3 +1,4 @@
+
 use crate::repository::CommentRepository;
 
 pub mod comment;
@@ -6,6 +7,7 @@ pub mod utils;
 pub mod webapi;
 
 mod gotham_json;
+mod markdown;
 
 
 pub fn run(repo_path: &str)
