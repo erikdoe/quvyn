@@ -46,6 +46,51 @@ fn it_ping_api() {
 }
 
 #[test]
+fn it_post_new_comment_and_retrieve_by_id() {
+    let client = client(repo("it_post_new_comment_and_retrieve_by_id"));
+
+    let doc = r#"{ "path": "/1/", "content": "Nice work!" }"#;
+    let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
+    assert_eq!(201, response.status());
+
+    let location = response.headers()
+        .get("Location").expect("expected location header")
+        .to_str().unwrap();
+
+    let response = client.get(&url(location)).perform().unwrap();
+    assert_eq!(response.status(), 200);
+    let obj = as_json_obj(response);
+    let id = obj
+        .get("id").expect("expected id field")
+        .as_str().unwrap();
+    assert_eq!(id, location.split('/').last().unwrap());
+    let content = obj
+        .get("content").expect("expected content field")
+        .as_str().unwrap();
+    assert_eq!(content, "Nice work!");
+}
+
+#[test]
+fn it_returns_400_for_unparsable_json() {
+    let client = client(repo("it_returns_400_for_unparsable_json"));
+    let doc = r#"{ "id": 1"#;
+
+    let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
+
+    assert_eq!(400, response.status());
+}
+
+#[test]
+fn it_returns_404_for_non_existing_comment() {
+    let client = client(repo("it_returns_404_for_non_existing_comments"));
+    let location = format!("/comments/{}", Uuid::new_v4().to_simple());
+
+    let response = client.get(url(&location)).perform().unwrap();
+
+    assert_eq!(404, response.status());
+}
+
+#[test]
 fn it_get_all_comments() {
     let repo = repo("it_get_all_comments");
     repo.save_comment(&Comment::new("/", "First comment", None, None));
@@ -79,55 +124,42 @@ fn it_get_comments_for_topic() {
         .as_array().expect("expected comments to be an array")
         .clone();
     assert_eq!(2, comments.len());
-    let content = comments[0]
-        .get("content").expect("expected content field")
-        .as_str().expect("expected conversion to str to succeed");
-    assert_eq!("Second comment", content);
-}
-
-#[test]
-fn it_post_new_comment_and_retrieve_by_id() {
-    let repo = repo("it_post_new_comment_and_retrieve_by_id");
-    let client = client(repo);
-
-    let doc = r#"{ "path": "/1/", "content": "Nice work!" }"#;
-    let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
-    assert_eq!(201, response.status());
-    let location = response.headers()
-        .get("Location").expect("expected location header")
-        .to_str().unwrap();
-
-    let response = client.get(&url(location)).perform().unwrap();
-    assert_eq!(response.status(), 200);
-    let response_obj = as_json_obj(response);
-    let id = response_obj
-        .get("id").expect("expected id field")
+    let path = comments[0]
+        .get("path").expect("expected path field")
         .as_str().unwrap();
-    assert_eq!(id, location.split('/').last().unwrap());
-    let id = response_obj
-        .get("content").expect("expected content field")
+    assert_eq!(path, "/2/");
+}
+
+#[test]
+fn it_comments_for_display_have_limited_fields() {
+    let repo = repo("it_comments_for_display_have_limited_fields");
+    let comment = Comment::new("/1/", "First comment", Some("Joe Bloggs"), Some("joe@example.org"));
+    repo.save_comment(&comment);
+    let client = client(repo);
+
+    let response = client.get(&url("/comments")).perform().unwrap();
+
+    assert_eq!(200, response.status());
+    let obj = as_json_obj(response)
+        .get("comments").expect("expected comments field")
+        .as_array().expect("expected comments to be an array")[0]
+        .clone();
+
+    let idh = obj
+        .get("idh").expect("expected idh field")
+        .as_u64().unwrap();
+    assert_eq!(idh, comment.idh);
+    let html = obj
+        .get("contentHtml").expect("expected contentHtml field")
         .as_str().unwrap();
-    assert_eq!(id, "Nice work!");
-}
+    assert_eq!(html, "<p>First comment</p>\n");
+    let author = obj
+        .get("authorName").expect("expected authorName field")
+        .as_str().unwrap();
+    assert_eq!(author, "Joe Bloggs");
 
-#[test]
-fn it_returns_400_for_unparseable_json() {
-    let repo = repo("it_returns_400_for_unparseable_json");
-    let client = client(repo);
-
-    let doc = r#"{ "id": 1"#;
-    let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
-
-    assert_eq!(400, response.status());
-}
-
-#[test]
-fn it_returns_404_for_non_existing_comments() {
-    let repo = repo("it_returns_404_for_non_existing_comments");
-    let client = client(repo);
-    let location = format!("/comments/{}", Uuid::new_v4().to_simple());
-
-    let response = client.get(url(&location)).perform().unwrap();
-
-    assert_eq!(404, response.status());
+    assert_eq!(obj.get("id").is_some(), false);
+    assert_eq!(obj.get("content").is_some(), false);
+    assert_eq!(obj.get("authorEmail").is_some(), false);
+    assert_eq!(obj.get("author_email").is_some(), false);
 }

@@ -39,6 +39,7 @@ pub fn router(repo: CommentRepository) -> Router {
     })
 }
 
+
 #[derive(Serialize)]
 struct PingResponse {
     status: String,
@@ -47,30 +48,6 @@ struct PingResponse {
 fn get_ping(state: State) -> (State, Response<Body>) {
     let response_obj = PingResponse { status: "ok".to_owned() };
     let response = create_json_response(&state, StatusCode::OK, &response_obj).unwrap();
-    (state, response)
-}
-
-
-#[derive(Deserialize, StateData, StaticResponseExtender)]
-struct CommentsQueryStringExtractor {
-    p: Option<String>,
-}
-
-#[derive(Serialize, Clone)]
-struct CommentListWrapper {
-    comments: Vec<Comment>
-}
-
-fn get_comments(mut state: State) -> (State, Response<Body>) {
-    let query_param = CommentsQueryStringExtractor::take_from(&mut state);
-    let repository = CommentRepository::borrow_from(&state);
-
-    let comments = match query_param.p {
-        Some(p) => repository.comments_for_path(&p),
-        None => repository.all_comments()
-    };
-    let wrapper = CommentListWrapper { comments };
-    let response = create_json_response(&state, StatusCode::OK, &wrapper).unwrap();
     (state, response)
 }
 
@@ -96,7 +73,9 @@ fn get_comment(mut state: State) -> (State, Response<Body>) {
 struct CommentPostDoc {
     path: String,
     content: String,
+    #[serde(rename = "authorName")]
     author_name: Option<String>,
+    #[serde(rename = "authorEmail")]
     author_email: Option<String>,
 }
 
@@ -122,22 +101,81 @@ fn post_comment(state: State) -> Box<HandlerFuture> {
 }
 
 
+#[derive(Deserialize, StateData, StaticResponseExtender)]
+struct CommentsQueryStringExtractor {
+    p: Option<String>,
+}
+
+#[derive(Serialize, Clone)]
+struct CommentListWrapper {
+    comments: Vec<CommentDisplayDoc>
+}
+
+#[derive(Serialize, Clone)]
+struct CommentDisplayDoc {
+    idh: u64,
+    path: String,
+    #[serde(rename = "contentHtml")]
+    content_html: String,
+    #[serde(rename = "authorName")]
+    author_name: Option<String>,
+}
+
+impl CommentDisplayDoc {
+    pub fn from_comment(comment: &Comment) -> CommentDisplayDoc {
+        CommentDisplayDoc {
+            idh: comment.idh,
+            path: comment.path.clone(),
+            content_html: comment.content_html.clone(),
+            author_name: comment.author_name.clone(),
+        }
+    }
+}
+
+fn get_comments(mut state: State) -> (State, Response<Body>) {
+    let query_param = CommentsQueryStringExtractor::take_from(&mut state);
+    let repository = CommentRepository::borrow_from(&state);
+
+    let comments = match query_param.p {
+        Some(p) => repository.comments_for_path(&p),
+        None => repository.all_comments()
+    };
+    let display_comments = comments.iter().map(CommentDisplayDoc::from_comment).collect();
+    let wrapper = CommentListWrapper { comments: display_comments };
+    let response = create_json_response(&state, StatusCode::OK, &wrapper).unwrap();
+    (state, response)
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn creates_comment_from_dto() {
-        let postdoc = CommentPostDoc {
+        let dto = CommentPostDoc {
             path: String::from("/a/"),
             content: String::from("First comment"),
-            author_name: Some(String::from("Joe Blogs")),
-            author_email: Some(String::from("joe@example.com")),
+            author_name: Some(String::from("Joe Bloggs")),
+            author_email: Some(String::from("joe@example.org")),
         };
-        let comment = postdoc.to_comment();
+        let comment = dto.to_comment();
         assert_eq!(comment.path, "/a/");
         assert_eq!(comment.content, "First comment");
-        assert_eq!(comment.author_name, Some(String::from("Joe Blogs")));
-        assert_eq!(comment.author_email, Some(String::from("joe@example.com")));
+        assert_eq!(comment.author_name, Some(String::from("Joe Bloggs")));
+        assert_eq!(comment.author_email, Some(String::from("joe@example.org")));
     }
+
+    #[test]
+    fn creates_dto_from_comment() {
+        let comment = Comment::new("/t/", "Nice work!", Some("Joe Bloggs"), Some("joe@example.org"));
+        let dto = CommentDisplayDoc::from_comment(&comment);
+
+        assert_eq!(dto.idh, comment.idh);
+        assert_eq!(dto.path, comment.path);
+        assert_eq!(dto.content_html, comment.content_html);
+        assert_eq!(dto.author_name, comment.author_name);
+    }
+
 }
