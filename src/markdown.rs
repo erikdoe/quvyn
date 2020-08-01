@@ -1,6 +1,5 @@
 use ammonia::clean;
-use pulldown_cmark::{Parser, Options, html::push_html};
-
+use pulldown_cmark::{html::push_html, Options, Parser};
 
 pub fn md_to_html(md: &str) -> String {
     let mut options = Options::empty();
@@ -16,8 +15,9 @@ pub fn md_to_html(md: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use regex::Regex;
+
+    use super::*;
 
     fn normalize_ws(input: &str) -> String {
         let re = Regex::new(r"\s+").unwrap();
@@ -52,5 +52,4 @@ mod tests {
 
         assert_eq!(normalize_ws(&html), r#"<p>x y</p> "#);
     }
-
 }

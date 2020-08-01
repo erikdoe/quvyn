@@ -1,16 +1,16 @@
+use std::borrow::BorrowMut;
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 use glob::glob;
 use gotham_derive::*;
+use uuid::Uuid;
 
 use crate::comment::Comment;
-use std::sync::{Mutex, Arc};
-use std::borrow::BorrowMut;
 use crate::utils;
-use std::path::Path;
-use uuid::Uuid;
 
 #[derive(Clone, StateData)]
 pub struct CommentRepository {
@@ -41,7 +41,6 @@ impl CommentRepository {
         let mut guard = self.comments.lock().unwrap();
         let list = guard.borrow_mut();
         list.iter().filter(|c| c.id == id).map(|c| c.clone()).last() // TODO: improve
-
     }
 
     pub fn comments_for_path(&self, path: &str) -> Vec<Comment> {
@@ -92,7 +91,6 @@ impl CommentRepository {
         let _result = file.write_all(utils::to_json(comment).as_ref());
         self.add_comment(comment); // TODO: there is no test to check that this happens after saving
     }
-
 }
 
 
@@ -104,7 +102,7 @@ mod tests {
         fn for_testing() -> CommentRepository {
             CommentRepository {
                 path: "/r".to_owned(),
-                comments: Arc::new(Mutex::new(Vec::new()))
+                comments: Arc::new(Mutex::new(Vec::new())),
             }
         }
     }
@@ -113,7 +111,7 @@ mod tests {
     fn adding_comment_makes_it_available_in_list() {
         let repository = CommentRepository::for_testing();
         let comment = Comment::new("/test-topic/", "Test", None, None);
-        
+
         repository.add_comment(&comment);
         let list = repository.all_comments();
 
@@ -144,6 +142,4 @@ mod tests {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].content, "First comment");
     }
-
-
- }
+}

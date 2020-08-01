@@ -1,7 +1,7 @@
 use serde_derive::*;
+use uuid::Uuid;
 
 use crate::markdown::md_to_html;
-use uuid::Uuid;
 use crate::utils;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Hash)]

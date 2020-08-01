@@ -8,11 +8,11 @@ use std::str;
 use gotham::plain::test::TestConnect;
 use gotham::test::{TestClient, TestResponse, TestServer};
 use serde_json::{Map, Value};
+use uuid::Uuid;
 
 use quvyn::{utils, webapi};
 use quvyn::comment::Comment;
 use quvyn::repository::CommentRepository;
-use uuid::Uuid;
 
 fn repo(test_name: &str) -> CommentRepository {
     let path = format!("var/it/webapi/{}", test_name);

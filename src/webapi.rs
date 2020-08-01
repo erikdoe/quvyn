@@ -8,13 +8,13 @@ use gotham::router::Router;
 use gotham::state::{FromState, State};
 use gotham_derive::*;
 use hyper::{Body, Response, StatusCode, Uri};
-use hyper::rt::{Future};
+use hyper::rt::Future;
 use serde_derive::*;
+use uuid::Uuid;
 
 use crate::comment::Comment;
 use crate::gotham_json::{create_json_response, JSONBody};
 use crate::repository::CommentRepository;
-use uuid::Uuid;
 
 pub fn run(repo: CommentRepository, addr: String) {
     println!("Listening for requests at http://{}", addr);
@@ -147,7 +147,6 @@ fn get_comments(mut state: State) -> (State, Response<Body>) {
 }
 
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -177,5 +176,4 @@ mod tests {
         assert_eq!(dto.content_html, comment.content_html);
         assert_eq!(dto.author_name, comment.author_name);
     }
-
 }

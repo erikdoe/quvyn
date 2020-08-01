@@ -3,7 +3,6 @@ extern crate quvyn;
 use quvyn::comment::Comment;
 use quvyn::repository::CommentRepository;
 
-
 fn repo(test_name: &str, reset: bool) -> CommentRepository {
     let path = format!("var/it/repository/{}", test_name);
     CommentRepository::new(&path, reset)
@@ -12,7 +11,6 @@ fn repo(test_name: &str, reset: bool) -> CommentRepository {
 
 #[test]
 fn it_stores_and_retrieves_comment() {
-
     let repo1 = repo("it_stores_and_retrieves_comment", true);
     let original = Comment::new("/some-topic/", "Nice work!", None, None);
     repo1.save_comment(&original);
@@ -27,7 +25,6 @@ fn it_stores_and_retrieves_comment() {
 
 #[test]
 fn it_saving_a_comment_adds_it_to_the_list() {
-
     let repo = repo("it_saving_a_comment_adds_it_to_the_list", true);
     let original = Comment::new("/some-topic/", "Nice work!", None, None);
     repo.save_comment(&original);

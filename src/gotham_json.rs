@@ -14,15 +14,15 @@ use hyper::{Body, Response, StatusCode};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{from_str, to_string};
-use self::gotham::helpers::http::response::create_response;
 
+use self::gotham::helpers::http::response::create_response;
 
 // Copyright (c) 2018 Christoph Wurst
 // https://github.com/ChristophWurst/gotham-serde-json-body-parser
 
 pub trait JSONBody {
     fn json<'de, T: 'de>(self) -> Box<dyn Future<Item=(State, T), Error=(State, HandlerError)> + Send + 'de>
-        where  T: DeserializeOwned + Send;
+        where T: DeserializeOwned + Send;
 }
 
 impl JSONBody for State {
