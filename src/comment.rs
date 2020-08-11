@@ -1,8 +1,8 @@
 use serde_derive::*;
 use uuid::Uuid;
 
-use crate::markdown::md_to_html;
 use crate::gravatar::gravatar_url_for_email;
+use crate::markdown::md_to_html;
 use crate::utils::calculate_hash;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Hash)]
@@ -44,18 +44,18 @@ mod tests {
     #[test]
     fn adds_gravatar_url_for_email() {
         let comment = Comment::new("", "", Some("Joe Bloggs"), Some("joe@example.org"));
-        assert_eq!(comment.author_gravatar, "https://secure.gravatar.com/avatar/4efa9f57993995b10a03a415f0e62883")
+        assert_eq!("https://secure.gravatar.com/avatar/4efa9f57993995b10a03a415f0e62883", comment.author_gravatar)
     }
 
     #[test]
     fn adds_gravatar_url_when_no_email_given() {
         let comment = Comment::new("", "", Some("Joe Bloggs"), None);
-        assert_eq!(comment.author_gravatar, "https://secure.gravatar.com/generic")
+        assert_eq!("https://secure.gravatar.com/generic", comment.author_gravatar)
     }
 
     #[test]
     fn adds_html_for_content() {
         let comment = Comment::new("", "_foo_", None, None);
-        assert_eq!(comment.content_html, "<p><em>foo</em></p>\n");
+        assert_eq!("<p><em>foo</em></p>", comment.content_html.trim());
     }
 }
