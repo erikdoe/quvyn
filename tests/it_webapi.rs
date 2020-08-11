@@ -147,3 +147,26 @@ fn it_comments_for_display_have_limited_fields() {
     assert_eq!(None, obj.get("authorEmail"));
     assert_eq!(None, obj.get("author_email"));
 }
+
+#[test]
+fn it_previews_markdown() {
+    let doc = r#"{ "content": "_foo_" }"#;
+    let client = client(repo("it_previews_markdown"));
+
+    let response = client.post(url("/preview"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
+
+    assert_eq!(200, response.status());
+    assert_eq!(mime::TEXT_HTML, response.headers().get("content-type").unwrap().to_str().unwrap());
+    let body = response.read_utf8_body().unwrap();
+    assert_eq!("<p><em>foo</em></p>", body.trim());
+}
+
+#[test]
+fn it_previews_malformed_markdown_without_5xx_error() {
+    let doc = r#"{ "content": "*_foo<a>*_</a>![bar]bar.jpg)" }"#;
+    let client = client(repo("it_previews_malformed_markdown"));
+
+    let response = client.post(url("/preview"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
+
+    assert_eq!(200, response.status());
+}

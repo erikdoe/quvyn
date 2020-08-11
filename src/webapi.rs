@@ -14,6 +14,7 @@ use uuid::Uuid;
 
 use crate::comment::Comment;
 use crate::gotham_json::{create_json_response, JSONBody};
+use crate::markdown::md_to_html;
 use crate::repository::CommentRepository;
 
 pub fn run(repo: CommentRepository, addr: String) {
@@ -36,6 +37,8 @@ pub fn router(repo: CommentRepository) -> Router {
         route.get("/comments/:id")
             .with_path_extractor::<IdParam>()
             .to(get_comment);
+        route.post("/preview")
+            .to(post_preview);
     })
 }
 
@@ -151,6 +154,20 @@ fn get_comments(mut state: State) -> (State, Response<Body>) {
 }
 
 
+#[derive(Deserialize)]
+struct CommentPreviewDoc {
+    content: String,
+}
+
+fn post_preview(state: State) -> Box<HandlerFuture> {
+    Box::new(state.json::<CommentPreviewDoc>().and_then(|(state, doc)| {
+        let body = md_to_html(&doc.content);
+        let response = create_response(&state, StatusCode::OK, mime::TEXT_HTML, body);
+        Ok((state, response))
+    }))
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -181,3 +198,4 @@ mod tests {
         assert_eq!(dto.author_name, comment.author_name);
     }
 }
+
