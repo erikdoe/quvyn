@@ -31,11 +31,11 @@ pub fn router(repo: CommentRepository) -> Router {
         route.get("/comments")
             .with_query_string_extractor::<CommentsQueryStringExtractor>()
             .to(get_comments);
+        route.post("/comments")
+            .to(post_comment);
         route.get("/comments/:id")
             .with_path_extractor::<IdParam>()
             .to(get_comment);
-        route.post("/comments")
-            .to(post_comment);
     })
 }
 
@@ -119,6 +119,9 @@ struct CommentDisplayDoc {
     content_html: String,
     #[serde(rename = "authorName")]
     author_name: Option<String>,
+    #[serde(rename = "authorGravatar")]
+    author_gravatar: String,
+
 }
 
 impl CommentDisplayDoc {
@@ -128,6 +131,7 @@ impl CommentDisplayDoc {
             path: comment.path.clone(),
             content_html: comment.content_html.clone(),
             author_name: comment.author_name.clone(),
+            author_gravatar: comment.author_gravatar.clone(),
         }
     }
 }

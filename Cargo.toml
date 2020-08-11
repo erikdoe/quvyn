@@ -8,11 +8,12 @@ edition = "2018"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
+uuid = { version = "0.8", features = ["v4", "serde"] }
 getopts = "0.2"
 gotham = "0.4"
 gotham_derive = "*"
 ammonia = "3.1"
-uuid = { version = "0.8", features = ["v4", "serde"] }
+gravatar = "0.2.0"
 
 hyper = "0.12"
 mime = "0.3"

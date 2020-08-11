@@ -7,7 +7,7 @@ use std::str;
 
 use gotham::plain::test::TestConnect;
 use gotham::test::{TestClient, TestResponse, TestServer};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use uuid::Uuid;
 
 use quvyn::{utils, webapi};
@@ -33,6 +33,12 @@ fn as_json_obj(response: TestResponse) -> Map<String, Value> {
     json_val.as_object().expect("expected object").clone()
 }
 
+macro_rules! jsome {
+    ( $( $x:expr )? ) => {
+        $( Some(&json!($x)) )?
+    };
+}
+
 
 #[test]
 fn it_ping_api() {
@@ -42,7 +48,7 @@ fn it_ping_api() {
 
     assert_eq!(200, response.status());
     let obj = as_json_obj(response);
-    assert_eq!("ok", obj.get("status").unwrap());
+    assert_eq!(jsome!("ok"), obj.get("status"));
 }
 
 #[test]
@@ -53,21 +59,13 @@ fn it_post_new_comment_and_retrieve_by_id() {
     let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
     assert_eq!(201, response.status());
 
-    let location = response.headers()
-        .get("Location").expect("expected location header")
-        .to_str().unwrap();
+    let location = response.headers().get("Location").expect("expected location header").to_str().unwrap();
 
     let response = client.get(&url(location)).perform().unwrap();
-    assert_eq!(response.status(), 200);
+    assert_eq!(200, response.status());
     let obj = as_json_obj(response);
-    let id = obj
-        .get("id").expect("expected id field")
-        .as_str().unwrap();
-    assert_eq!(id, location.split('/').last().unwrap());
-    let content = obj
-        .get("content").expect("expected content field")
-        .as_str().unwrap();
-    assert_eq!(content, "Nice work!");
+    assert_eq!(jsome!(location.split('/').last().unwrap()), obj.get("id"));
+    assert_eq!(jsome!("Nice work!"), obj.get("content"));
 }
 
 #[test]
@@ -102,8 +100,7 @@ fn it_get_all_comments() {
     assert_eq!(200, response.status());
     let comments = as_json_obj(response)
         .get("comments").expect("expected comments field")
-        .as_array().expect("expected comments to be an array")
-        .clone();
+        .as_array().unwrap().clone();
     assert_eq!(2, comments.len());
 }
 
@@ -121,13 +118,9 @@ fn it_get_comments_for_topic() {
     assert_eq!(200, response.status());
     let comments = as_json_obj(response)
         .get("comments").expect("expected comments field")
-        .as_array().expect("expected comments to be an array")
-        .clone();
+        .as_array().unwrap().clone();
     assert_eq!(2, comments.len());
-    let path = comments[0]
-        .get("path").expect("expected path field")
-        .as_str().unwrap();
-    assert_eq!(path, "/2/");
+    assert_eq!(jsome!("/2/"), comments[0].get("path"));
 }
 
 #[test]
@@ -142,24 +135,15 @@ fn it_comments_for_display_have_limited_fields() {
     assert_eq!(200, response.status());
     let obj = as_json_obj(response)
         .get("comments").expect("expected comments field")
-        .as_array().expect("expected comments to be an array")[0]
-        .clone();
+        .as_array().unwrap()[0].clone();
 
-    let idh = obj
-        .get("idh").expect("expected idh field")
-        .as_u64().unwrap();
-    assert_eq!(idh, comment.idh);
-    let html = obj
-        .get("contentHtml").expect("expected contentHtml field")
-        .as_str().unwrap();
-    assert_eq!(html, "<p>First comment</p>\n");
-    let author = obj
-        .get("authorName").expect("expected authorName field")
-        .as_str().unwrap();
-    assert_eq!(author, "Joe Bloggs");
+    assert_eq!(jsome!(comment.idh), obj.get("idh"));
+    assert_eq!(jsome!("<p>First comment</p>\n"), obj.get("contentHtml"));
+    assert_eq!(jsome!("Joe Bloggs"), obj.get("authorName"));
+    assert_eq!(jsome!(comment.author_gravatar), obj.get("authorGravatar"));
 
-    assert_eq!(obj.get("id").is_some(), false);
-    assert_eq!(obj.get("content").is_some(), false);
-    assert_eq!(obj.get("authorEmail").is_some(), false);
-    assert_eq!(obj.get("author_email").is_some(), false);
+    assert_eq!(None, obj.get("id"));
+    assert_eq!(None, obj.get("content"));
+    assert_eq!(None, obj.get("authorEmail"));
+    assert_eq!(None, obj.get("author_email"));
 }

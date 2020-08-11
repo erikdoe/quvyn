@@ -6,6 +6,7 @@ pub mod utils;
 pub mod webapi;
 
 mod gotham_json;
+mod gravatar;
 mod markdown;
 
 

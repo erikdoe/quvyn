@@ -46,7 +46,7 @@ mod tests {
 
     #[test]
     fn removes_harmful_html() {
-        let md = r#"x <iframe src="foo"></iframe> y"#;
+        let md = r#"x <iframe src="foo"></iframe><script>alert(\"foo\")</script> y"#;
 
         let html = md_to_html(md);
 
