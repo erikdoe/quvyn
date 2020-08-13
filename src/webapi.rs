@@ -16,6 +16,7 @@ use crate::comment::Comment;
 use crate::gotham_json::{create_json_response, JSONBody};
 use crate::markdown::md_to_html;
 use crate::repository::CommentRepository;
+use chrono::{DateTime, Utc};
 
 pub fn run(repo: CommentRepository, addr: String) {
     println!("Listening for requests at http://{}", addr);
@@ -117,6 +118,7 @@ struct CommentListWrapper {
 #[derive(Serialize, Clone)]
 struct CommentDisplayDoc {
     idh: u64,
+    timestamp: DateTime<Utc>,
     path: String,
     #[serde(rename = "contentHtml")]
     content_html: String,
@@ -131,6 +133,7 @@ impl CommentDisplayDoc {
     pub fn from_comment(comment: &Comment) -> CommentDisplayDoc {
         CommentDisplayDoc {
             idh: comment.idh,
+            timestamp: comment.timestamp,
             path: comment.path.clone(),
             content_html: comment.content_html.clone(),
             author_name: comment.author_name.clone(),

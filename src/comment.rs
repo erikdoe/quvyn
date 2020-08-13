@@ -1,3 +1,4 @@
+use chrono::{DateTime, Duration, Utc};
 use serde_derive::*;
 use uuid::Uuid;
 
@@ -10,6 +11,7 @@ pub struct Comment
 {
     pub id: Uuid,
     pub idh: u64,
+    pub timestamp: DateTime<Utc>,
     pub path: String,
     pub author_name: Option<String>,
     pub author_email: Option<String>,
@@ -23,9 +25,12 @@ impl Comment
 {
     pub fn new(path: &str, content: &str, author_name: Option<&str>, author_email: Option<&str>) -> Comment {
         let id = Uuid::new_v4();
+        let mut timestamp = Utc::now();
+        timestamp = timestamp - Duration::microseconds(timestamp.timestamp_subsec_micros() as i64);
         Comment {
             id,
             idh: calculate_hash(&id),
+            timestamp,
             path: path.to_owned(),
             author_name: author_name.map(|n| n.to_owned()),
             author_email: author_email.map(|e| e.to_owned()),
@@ -40,6 +45,13 @@ impl Comment
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn adds_current_time_with_limited_precision() {
+        let comment = Comment::new("", "content", None, None);
+        assert_eq!(0, (Utc::now() - comment.timestamp).num_seconds()); // TODO: not ideal...
+        assert_eq!(0, comment.timestamp.timestamp_subsec_micros());
+    }
 
     #[test]
     fn adds_gravatar_url_for_email() {

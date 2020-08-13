@@ -182,6 +182,7 @@ checksum = "c74d84029116787153e02106bf53e66828452a4b325cc8652b788b5967c0a0b6"
 dependencies = [
  "num-integer",
  "num-traits",
+ "serde",
  "time",
 ]
 
@@ -1005,6 +1006,7 @@ name = "quvyn"
 version = "0.1.0"
 dependencies = [
  "ammonia",
+ "chrono",
  "failure",
  "futures",
  "getopts",
