@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn adds_gravatar_url_when_no_email_given() {
         let comment = Comment::new("", "", Some("Joe Bloggs"), None);
-        assert_eq!("https://secure.gravatar.com/generic", comment.author_gravatar)
+        assert_eq!("https://secure.gravatar.com/avatar/4988a16beb097f6c7ec78816872ddd13", comment.author_gravatar)
     }
 
     #[test]
