@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>quvyn demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.js"></script>
+    <script src="quvyn.js"></script>
+</head>
+<body>
+
+
+<div id="quvyn">
+    <h2>Comments</h2>
+    <qv-summary :comments="comments"></qv-summary>
+    <qv-list :comments="comments" dateformat="D MMM YYYY, H:mm"></qv-list>
+</div>
+
+<script>new Quvyn("#quvyn", "http://localhost:8080")</script>
+
+</body>
+</html>

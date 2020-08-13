@@ -17,6 +17,7 @@ use crate::gotham_json::{create_json_response, JSONBody};
 use crate::markdown::md_to_html;
 use crate::repository::CommentRepository;
 use chrono::{DateTime, Utc};
+use gotham::handler::assets::FileOptions;
 
 pub fn run(repo: CommentRepository, addr: String) {
     println!("Listening for requests at http://{}", addr);
@@ -40,6 +41,12 @@ pub fn router(repo: CommentRepository) -> Router {
             .to(get_comment);
         route.post("/preview")
             .to(post_preview);
+        route.get("/app/*")
+            .to_dir(FileOptions::new(&"vue")
+                .with_cache_control("no-cache")
+                .with_gzip(true)
+                .build(),
+        );
     })
 }
 
