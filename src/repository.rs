@@ -128,7 +128,7 @@ mod tests {
 
         let returned_comment = result.expect("expected a comment");
         assert_eq!(returned_comment.id, new_comment.id);
-        assert_eq!(returned_comment.content, "Test");
+        assert_eq!(returned_comment.text, "Test");
     }
 
     #[test]
@@ -140,6 +140,6 @@ mod tests {
         let list = repository.comments_for_path("/test-topic/");
 
         assert_eq!(list.len(), 1);
-        assert_eq!(list[0].content, "First comment");
+        assert_eq!(list[0].text, "First comment");
     }
 }

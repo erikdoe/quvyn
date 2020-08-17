@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.png" type="image/png">
     <title>quvyn demo</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.js"></script>
@@ -10,13 +11,15 @@
 <body>
 
 
-<div id="quvyn">
+<div id="comments">
     <h2>Comments</h2>
     <qv-summary :comments="comments"></qv-summary>
     <qv-list :comments="comments" dateformat="D MMM YYYY, H:mm"></qv-list>
+    <h3>Leave your comment</h3>
+    <qv-comment-editor @post-comment="postComment"></qv-comment-editor>
 </div>
 
-<script>new Quvyn("#quvyn", "http://localhost:8080")</script>
+<script>new Quvyn("#comments", "http://localhost:8080")</script>
 
 </body>
 </html>

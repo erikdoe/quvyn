@@ -16,6 +16,7 @@ use serde::Serialize;
 use serde_json::{from_str, to_string};
 
 use self::gotham::helpers::http::response::create_response;
+use std::collections::HashMap;
 
 // Copyright (c) 2018 Christoph Wurst
 // https://github.com/ChristophWurst/gotham-serde-json-body-parser
@@ -59,8 +60,16 @@ impl JSONBody for State {
 
 pub fn create_json_response<S: Serialize>(state: &State, status: StatusCode, data: &S)
                                           -> Result<Response<Body>, serde_json::Error> {
+    create_json_response_with_headers(state, status, HashMap::new(), data)
+}
+
+pub fn create_json_response_with_headers<S: Serialize>(state: &State, status: StatusCode, headers: HashMap<&'static str, String>, data: &S)
+                                          -> Result<Response<Body>, serde_json::Error> {
     to_string(data).map(|json_str| {
-        create_response(state, status, mime::APPLICATION_JSON, json_str.into_bytes(),
-        )
+        let mut response = create_response(state, status, mime::APPLICATION_JSON, json_str.into_bytes());
+        for (key, value) in headers {
+            response.headers_mut().insert(key, value.parse().unwrap());
+        }
+        response
     })
 }

@@ -16,14 +16,14 @@ pub struct Comment
     pub author_name: Option<String>,
     pub author_email: Option<String>,
     pub author_gravatar: String,
-    pub content: String,
-    pub content_html: String,
+    pub text: String,
+    pub text_html: String,
 }
 
 
 impl Comment
 {
-    pub fn new(path: &str, content: &str, author_name: Option<&str>, author_email: Option<&str>) -> Comment {
+    pub fn new(path: &str, text: &str, author_name: Option<&str>, author_email: Option<&str>) -> Comment {
         let id = Uuid::new_v4();
         let mut timestamp = Utc::now();
         timestamp = timestamp - Duration::microseconds(timestamp.timestamp_subsec_micros() as i64);
@@ -35,8 +35,8 @@ impl Comment
             author_name: author_name.map(|n| n.to_owned()),
             author_email: author_email.map(|e| e.to_owned()),
             author_gravatar: gravatar_url_for_email(author_email),
-            content: content.to_owned(),
-            content_html: md_to_html(content),
+            text: text.to_owned(),
+            text_html: md_to_html(text),
         }
     }
 }
@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn adds_current_time_with_limited_precision() {
-        let comment = Comment::new("", "content", None, None);
+        let comment = Comment::new("", "text", None, None);
         assert_eq!(0, (Utc::now() - comment.timestamp).num_seconds()); // TODO: not ideal...
         assert_eq!(0, comment.timestamp.timestamp_subsec_micros());
     }
@@ -66,8 +66,8 @@ mod tests {
     }
 
     #[test]
-    fn adds_html_for_content() {
+    fn adds_html_for_text() {
         let comment = Comment::new("", "_foo_", None, None);
-        assert_eq!("<p><em>foo</em></p>", comment.content_html.trim());
+        assert_eq!("<p><em>foo</em></p>", comment.text_html.trim());
     }
 }

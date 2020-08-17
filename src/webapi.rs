@@ -1,3 +1,5 @@
+use chrono::{DateTime, Utc};
+use gotham::handler::assets::FileOptions;
 use gotham::handler::HandlerFuture;
 use gotham::helpers::http::response::create_response;
 use gotham::middleware::state::StateMiddleware;
@@ -13,18 +15,16 @@ use serde_derive::*;
 use uuid::Uuid;
 
 use crate::comment::Comment;
-use crate::gotham_json::{create_json_response, JSONBody};
+use crate::gotham_json::{create_json_response, create_json_response_with_headers, JSONBody};
 use crate::markdown::md_to_html;
 use crate::repository::CommentRepository;
-use chrono::{DateTime, Utc};
-use gotham::handler::assets::FileOptions;
 
-pub fn run(repo: CommentRepository, addr: String) {
+pub fn run(app_path: &str, repo: CommentRepository, addr: String) {
     println!("Listening for requests at http://{}", addr);
-    gotham::start(addr, router(repo));
+    gotham::start(addr, router(app_path, repo));
 }
 
-pub fn router(repo: CommentRepository) -> Router {
+pub fn router(app_path: &str, repo: CommentRepository) -> Router {
     let middleware = StateMiddleware::new(repo);
     let pipeline = pipeline::single_middleware(middleware);
     let (chain, pipelines) = pipeline::single::single_pipeline(pipeline);
@@ -41,12 +41,14 @@ pub fn router(repo: CommentRepository) -> Router {
             .to(get_comment);
         route.post("/preview")
             .to(post_preview);
+        route.get("/favicon.png")
+            .to_file(&format!("{}/favicon.png", app_path));
         route.get("/app/*")
-            .to_dir(FileOptions::new(&"vue")
-                .with_cache_control("no-cache")
-                .with_gzip(true)
-                .build(),
-        );
+            .to_dir(FileOptions::new(app_path)
+                        .with_cache_control("no-cache")
+                        .with_gzip(true)
+                        .build(),
+            );
     })
 }
 
@@ -83,7 +85,7 @@ fn get_comment(mut state: State) -> (State, Response<Body>) {
 #[derive(Deserialize)]
 struct CommentPostDoc {
     path: String,
-    content: String,
+    text: String,
     #[serde(rename = "authorName")]
     author_name: Option<String>,
     #[serde(rename = "authorEmail")]
@@ -92,7 +94,7 @@ struct CommentPostDoc {
 
 impl CommentPostDoc {
     fn to_comment(&self) -> Comment {
-        Comment::new(&self.path, &self.content,
+        Comment::new(&self.path, &self.text,
                      self.author_name.as_ref().map(String::as_str),
                      self.author_email.as_ref().map(String::as_str)) // TODO: better way?
     }
@@ -100,13 +102,16 @@ impl CommentPostDoc {
 
 fn post_comment(state: State) -> Box<HandlerFuture> {
     Box::new(state.json::<CommentPostDoc>().and_then(|(state, doc)| {
-        let repo = CommentRepository::borrow_from(&state);
         let comment = doc.to_comment();
-        repo.save_comment(&comment);
-        let (code, body) = (StatusCode::CREATED, "Created comment\n");
-        let mut response = create_response(&state, code, mime::TEXT_PLAIN, body);
-        let location = format!("{}/{}", Uri::borrow_from(&state), comment.id);
-        response.headers_mut().insert("Location", location.parse().unwrap());
+        let response = if comment.text_html == "" {
+            create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "No visible text")
+        } else {
+            CommentRepository::borrow_from(&state).save_comment(&comment);
+            let location = format!("{}/{}", Uri::borrow_from(&state), comment.id);
+            let headers = vec![("Location", location)].into_iter().collect(); // TODO: better way?
+            let resp_doc = CommentDisplayDoc::from_comment(&comment);
+            create_json_response_with_headers(&state, StatusCode::CREATED, headers, &resp_doc).unwrap()
+        };
         Ok((state, response))
     }))
 }
@@ -127,8 +132,8 @@ struct CommentDisplayDoc {
     idh: u64,
     timestamp: DateTime<Utc>,
     path: String,
-    #[serde(rename = "contentHtml")]
-    content_html: String,
+    #[serde(rename = "textHtml")]
+    text_html: String,
     #[serde(rename = "authorName")]
     author_name: Option<String>,
     #[serde(rename = "authorGravatar")]
@@ -142,7 +147,7 @@ impl CommentDisplayDoc {
             idh: comment.idh,
             timestamp: comment.timestamp,
             path: comment.path.clone(),
-            content_html: comment.content_html.clone(),
+            text_html: comment.text_html.clone(),
             author_name: comment.author_name.clone(),
             author_gravatar: comment.author_gravatar.clone(),
         }
@@ -166,12 +171,12 @@ fn get_comments(mut state: State) -> (State, Response<Body>) {
 
 #[derive(Deserialize)]
 struct CommentPreviewDoc {
-    content: String,
+    text: String,
 }
 
 fn post_preview(state: State) -> Box<HandlerFuture> {
     Box::new(state.json::<CommentPreviewDoc>().and_then(|(state, doc)| {
-        let body = md_to_html(&doc.content);
+        let body = md_to_html(&doc.text);
         let response = create_response(&state, StatusCode::OK, mime::TEXT_HTML, body);
         Ok((state, response))
     }))
@@ -186,13 +191,13 @@ mod tests {
     fn creates_comment_from_dto() {
         let dto = CommentPostDoc {
             path: String::from("/a/"),
-            content: String::from("First comment"),
+            text: String::from("First comment"),
             author_name: Some(String::from("Joe Bloggs")),
             author_email: Some(String::from("joe@example.org")),
         };
         let comment = dto.to_comment();
         assert_eq!(comment.path, "/a/");
-        assert_eq!(comment.content, "First comment");
+        assert_eq!(comment.text, "First comment");
         assert_eq!(comment.author_name, Some(String::from("Joe Bloggs")));
         assert_eq!(comment.author_email, Some(String::from("joe@example.org")));
     }
@@ -204,7 +209,7 @@ mod tests {
 
         assert_eq!(dto.idh, comment.idh);
         assert_eq!(dto.path, comment.path);
-        assert_eq!(dto.content_html, comment.content_html);
+        assert_eq!(dto.text_html, comment.text_html);
         assert_eq!(dto.author_name, comment.author_name);
     }
 }

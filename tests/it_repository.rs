@@ -20,7 +20,7 @@ fn it_stores_and_retrieves_comment() {
     let comments = repo2.all_comments();
 
     assert_eq!(1, comments.len());
-    assert_eq!("Nice work!", comments[0].content);
+    assert_eq!("Nice work!", comments[0].text);
 }
 
 #[test]
@@ -32,5 +32,5 @@ fn it_saving_a_comment_adds_it_to_the_list() {
     let comments = repo.all_comments();
 
     assert_eq!(1, comments.len());
-    assert_eq!("Nice work!", comments[0].content);
+    assert_eq!("Nice work!", comments[0].text);
 }

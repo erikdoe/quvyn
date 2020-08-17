@@ -20,7 +20,7 @@ fn repo(test_name: &str) -> CommentRepository {
 }
 
 fn client(repo: CommentRepository) -> TestClient<TestServer, TestConnect> {
-    TestServer::new(webapi::router(repo)).unwrap().client()
+    TestServer::new(webapi::router("vue", repo)).unwrap().client()
 }
 
 fn url(path: &str) -> String {
@@ -55,7 +55,10 @@ fn it_ping_api() {
 fn it_post_new_comment_and_retrieve_by_id() {
     let client = client(repo("it_post_new_comment_and_retrieve_by_id"));
 
-    let doc = r#"{ "path": "/1/", "content": "Nice work!" }"#;
+    let doc = r#"{
+        "path": "/1/",
+        "text": "Nice work!"
+    }"#;
     let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
     assert_eq!(201, response.status());
 
@@ -65,18 +68,50 @@ fn it_post_new_comment_and_retrieve_by_id() {
     assert_eq!(200, response.status());
     let obj = as_json_obj(response);
     assert_eq!(jsome!(location.split('/').last().unwrap()), obj.get("id"));
-    assert_eq!(jsome!("Nice work!"), obj.get("content"));
+    assert_eq!(jsome!("Nice work!"), obj.get("text"));
 }
 
 #[test]
-fn it_returns_400_for_unparsable_json() {
-    let client = client(repo("it_returns_400_for_unparsable_json"));
+fn it_post_new_comment_returns_display_version() {
+    let client = client(repo("it_post_new_comment_returns_display_version"));
+
+    let doc = r#"{
+        "path": "/1/",
+        "authorName": "Joe Bloggs",
+        "authorEmail": "joe@example.org",
+        "text": "Nice work!"
+    }"#;
+    let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
+    assert_eq!(201, response.status());
+
+    let obj = as_json_obj(response);
+    assert_eq!(jsome!("Joe Bloggs"), obj.get("authorName"));
+    assert_eq!(None, obj.get("authorEmail"));
+}
+
+#[test]
+fn it_returns_400_when_posting_invalid_json() {
+    let client = client(repo("it_returns_400_when_posting_unparsable_json"));
     let doc = r#"{ "id": 1"#;
 
     let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
 
     assert_eq!(400, response.status());
 }
+
+#[test]
+fn it_returns_400_when_text_parses_into_nothing() {
+    let client = client(repo("it_returns_400_when_text_parses_into_nothing"));
+    let doc = r#"{
+        "path": "/",
+        "text": "<script>foo</script>"
+    }"#;
+
+    let response = client.post(url("/comments"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
+
+    assert_eq!(400, response.status());
+}
+
 
 #[test]
 fn it_returns_404_for_non_existing_comment() {
@@ -138,19 +173,19 @@ fn it_comments_for_display_have_limited_fields() {
         .as_array().unwrap()[0].clone();
 
     assert_eq!(jsome!(comment.idh), obj.get("idh"));
-    assert_eq!(jsome!("<p>First comment</p>\n"), obj.get("contentHtml"));
+    assert_eq!(jsome!("<p>First comment</p>\n"), obj.get("textHtml"));
     assert_eq!(jsome!("Joe Bloggs"), obj.get("authorName"));
     assert_eq!(jsome!(comment.author_gravatar), obj.get("authorGravatar"));
 
     assert_eq!(None, obj.get("id"));
-    assert_eq!(None, obj.get("content"));
+    assert_eq!(None, obj.get("text"));
     assert_eq!(None, obj.get("authorEmail"));
     assert_eq!(None, obj.get("author_email"));
 }
 
 #[test]
 fn it_previews_markdown() {
-    let doc = r#"{ "content": "_foo_" }"#;
+    let doc = r#"{ "text": "_foo_" }"#;
     let client = client(repo("it_previews_markdown"));
 
     let response = client.post(url("/preview"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
@@ -163,7 +198,7 @@ fn it_previews_markdown() {
 
 #[test]
 fn it_previews_malformed_markdown_without_5xx_error() {
-    let doc = r#"{ "content": "*_foo<a>*_</a>![bar]bar.jpg)" }"#;
+    let doc = r#"{ "text": "*_foo<a>*_</a>![bar]bar.jpg)" }"#;
     let client = client(repo("it_previews_malformed_markdown"));
 
     let response = client.post(url("/preview"), doc.to_string(), mime::APPLICATION_JSON).perform().unwrap();
