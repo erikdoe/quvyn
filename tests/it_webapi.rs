@@ -205,3 +205,14 @@ fn it_previews_malformed_markdown_without_5xx_error() {
 
     assert_eq!(200, response.status());
 }
+
+#[test]
+fn it_handles_cors_preflight_requests() {
+    let client = client(repo("it_handles_cors_preflight_requests"));
+
+    let response = client.options(url("/comments")).perform().unwrap();
+    assert_eq!(204, response.status());
+
+    let response = client.options(url("/preview")).perform().unwrap();
+    assert_eq!(204, response.status());
+}

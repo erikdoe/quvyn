@@ -18,16 +18,20 @@ use crate::comment::Comment;
 use crate::gotham_json::{create_json_response, create_json_response_with_headers, JSONBody};
 use crate::markdown::md_to_html;
 use crate::repository::CommentRepository;
+use gotham::pipeline::new_pipeline;
+use crate::gotham_cors::CorsMiddleware;
 
-pub fn run(app_path: &str, repo: CommentRepository, addr: &str) {
+pub fn run(repo: CommentRepository, app_path: String, addr: String, origin: Option<String>) {
     println!("Listening for requests at http://{}", addr);
-    gotham::start(addr.to_string(), router(app_path, repo));
+    gotham::start(addr, router(app_path, origin, repo));
 }
 
-pub fn router(app_path: &str, repo: CommentRepository) -> Router {
-    let middleware = StateMiddleware::new(repo);
-    let pipeline = pipeline::single_middleware(middleware);
-    let (chain, pipelines) = pipeline::single::single_pipeline(pipeline);
+pub fn router(app_path: String, origin: Option<String>, repo: CommentRepository) -> Router {
+    let pipeline1 = new_pipeline()
+        .add(StateMiddleware::new(repo))
+        .add(CorsMiddleware::new(origin))  // TODO: should only add middleware when needed
+        .build();
+    let (chain, pipelines) = pipeline::single::single_pipeline(pipeline1);
     build_router(chain, pipelines, |route| {
         route.get("/ping")
             .to(get_ping);
@@ -41,10 +45,14 @@ pub fn router(app_path: &str, repo: CommentRepository) -> Router {
             .to(get_comment);
         route.post("/preview")
             .to(post_preview);
+        route.options("/comments")
+            .to(cors_preflight);
+        route.options("/preview")
+            .to(cors_preflight);
         route.get("/favicon.png")
             .to_file(&format!("{}/favicon.png", app_path));
         route.get("/app/*")
-            .to_dir(FileOptions::new(app_path)
+            .to_dir(FileOptions::new(&app_path)
                         .with_cache_control("no-cache")
                         .with_gzip(true)
                         .build(),
@@ -180,6 +188,12 @@ fn post_preview(state: State) -> Box<HandlerFuture> {
         let response = create_response(&state, StatusCode::OK, mime::TEXT_HTML, body);
         Ok((state, response))
     }))
+}
+
+
+fn cors_preflight(state: State) -> (State, Response<Body>) {
+    let response = create_response(&state, StatusCode::NO_CONTENT, mime::TEXT_PLAIN, "");
+    (state, response)
 }
 
 
