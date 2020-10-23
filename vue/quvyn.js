@@ -4,10 +4,6 @@ Vue.component('qv-comment-section', {
         baseurl: {
             type: String,
             required: true
-        },
-        dateformat: {
-            type: String,
-            required: false
         }
     },
     methods: {
@@ -46,7 +42,7 @@ Vue.component('qv-comment-section', {
         <section class="qv-comment-section">
             <h2>Comments</h2>
             <qv-summary :comments="comments"></qv-summary>
-            <qv-list :comments="comments" dateformat="D MMM YYYY, H:mm"></qv-list>
+            <qv-list :comments="comments"></qv-list>
             <h3>Leave your comment</h3>
             <qv-comment-editor :preview="preview" @post-comment="postComment" @get-preview="getPreview"></qv-comment-editor>
         </section>
@@ -83,17 +79,13 @@ Vue.component('qv-list', {
         comments: {
             type: Array,
             required: true
-        },
-        dateformat: {
-            type: String,
-            required: false
         }
     },
     template: `
         <div class="qv-list">
             <ul>
                 <li v-for="c in comments">
-                    <qv-comment :comment="c" :dateformat="dateformat"></qv-comment>
+                    <qv-comment :comment="c"></qv-comment>
                 </li>
             </ul>
         </div>
@@ -106,15 +98,11 @@ Vue.component('qv-comment', {
         comment: {
             type: Object,
             required: true
-        },
-        dateformat: {
-            type: String,
-            required: false
         }
     },
     filters: {
-        moment: function (date, format) {
-            return moment(date).format(format)
+        formatTimestamp: function (text) {
+            return luxon.DateTime.fromISO(text).toLocaleString(luxon.DateTime.DATETIME_MED)
         }
     },
     template: `
@@ -128,7 +116,7 @@ Vue.component('qv-comment', {
                     <span v-else class="qv-author-anonymous">Anonymous</span>
                 </div>
                 <div class="qv-timestamp">
-                    {{ comment.timestamp | moment(dateformat) }}
+                    {{ comment.timestamp | formatTimestamp() }}
                 </div>
             </div>
             <div class="qv-text" v-html="comment.textHtml">

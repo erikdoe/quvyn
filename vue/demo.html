@@ -5,13 +5,13 @@
     <link rel="icon" href="/favicon.png" type="image/png">
     <title>quvyn demo</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@1.25.0/build/global/luxon.min.js"></script>
     <script src="quvyn.js"></script>
 </head>
 <body>
 
 <div id="quvyn">
-    <qv-comment-section baseurl="http://localhost:8080" dateformat="D MMM YYYY, H:mm"></qv-comment-section>
+    <qv-comment-section baseurl="http://localhost:8080"></qv-comment-section>
 </div>
 
 <script>new Vue({el: "#quvyn"})</script>
