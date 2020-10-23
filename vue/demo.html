@@ -10,16 +10,11 @@
 </head>
 <body>
 
-
-<div id="comments">
-    <h2>Comments</h2>
-    <qv-summary :comments="comments"></qv-summary>
-    <qv-list :comments="comments" dateformat="D MMM YYYY, H:mm"></qv-list>
-    <h3>Leave your comment</h3>
-    <qv-comment-editor @post-comment="postComment"></qv-comment-editor>
+<div id="quvyn">
+    <qv-comment-section baseurl="http://localhost:8080" dateformat="D MMM YYYY, H:mm"></qv-comment-section>
 </div>
 
-<script>new Quvyn("#comments", "http://localhost:8080")</script>
+<script>new Vue({el: "#quvyn"})</script>
 
 </body>
 </html>
