@@ -19,9 +19,9 @@ use crate::gotham_json::{create_json_response, create_json_response_with_headers
 use crate::markdown::md_to_html;
 use crate::repository::CommentRepository;
 
-pub fn run(app_path: &str, repo: CommentRepository, addr: String) {
+pub fn run(app_path: &str, repo: CommentRepository, addr: &str) {
     println!("Listening for requests at http://{}", addr);
-    gotham::start(addr, router(app_path, repo));
+    gotham::start(addr.to_string(), router(app_path, repo));
 }
 
 pub fn router(app_path: &str, repo: CommentRepository) -> Router {
