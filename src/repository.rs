@@ -46,7 +46,9 @@ impl CommentRepository {
     pub fn comments_for_path(&self, path: &str) -> Vec<Comment> {
         let mut guard = self.comments.lock().unwrap();
         let list = guard.borrow_mut();
-        list.iter().filter(|c| c.path == path).map(|c| c.clone()).collect()
+        let mut list: Vec<Comment> = list.iter().filter(|c| c.path == path).map(|c| c.clone()).collect();
+        list.sort_unstable_by_key(|c| c.timestamp );
+        list
     }
 
     pub fn add_comment(&self, comment: &Comment) {
@@ -97,6 +99,7 @@ impl CommentRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Duration;
 
     impl CommentRepository {
         fn for_testing() -> CommentRepository {
@@ -142,4 +145,25 @@ mod tests {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].text, "First comment");
     }
+
+    #[test]
+    fn comments_are_sorted_by_timestamp() {
+        let repository = CommentRepository::for_testing();
+        let mut c1 = Comment::new("/test-topic/", "Second comment", None, None);
+        c1.timestamp = c1.timestamp - Duration::minutes(5);
+        repository.add_comment(&c1);
+        let c2 = Comment::new("/test-topic/", "Third comment", None, None);
+        repository.add_comment(&c2);
+        let mut c3 = Comment::new("/test-topic/", "First comment", None, None);
+        c3.timestamp = c3.timestamp - Duration::hours(2);
+        repository.add_comment(&c3);
+
+        let list = repository.comments_for_path("/test-topic/");
+
+        assert_eq!(list.len(), 3);
+        assert_eq!(list[0].text, "First comment");
+        assert_eq!(list[1].text, "Second comment");
+        assert_eq!(list[2].text, "Third comment");
+    }
+
 }
