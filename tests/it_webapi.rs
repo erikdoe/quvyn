@@ -20,7 +20,7 @@ fn repo(test_name: &str) -> CommentRepository {
 }
 
 fn client(repo: CommentRepository) -> TestClient<TestServer, TestConnect> {
-    TestServer::new(webapi::router("vue", repo)).unwrap().client()
+    TestServer::new(webapi::router("vue", &None, repo)).unwrap().client()
 }
 
 fn url(path: &str) -> String {

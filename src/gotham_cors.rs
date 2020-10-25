@@ -12,9 +12,9 @@ pub struct CorsMiddleware {
 }
 
 impl CorsMiddleware {
-    pub fn new(origin: Option<String>) -> Self {
+    pub fn new(origin: &Option<String>) -> Self {
         Self {
-            origin
+            origin: origin.clone()
         }
     }
 }

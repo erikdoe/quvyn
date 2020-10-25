@@ -18,5 +18,5 @@ pub fn run(repo_path: String, repo_reset: bool, app_path: String, bind_addr: Str
 {
     let repository = CommentRepository::new(&repo_path, repo_reset);
     repository.load_all_comments();
-    webapi::run(repository, app_path, bind_addr, cors_origin);
+    webapi::run(repository, &app_path, &bind_addr, &cors_origin);
 }

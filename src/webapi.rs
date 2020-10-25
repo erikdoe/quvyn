@@ -21,12 +21,12 @@ use crate::repository::CommentRepository;
 use gotham::pipeline::new_pipeline;
 use crate::gotham_cors::CorsMiddleware;
 
-pub fn run(repo: CommentRepository, app_path: String, addr: String, origin: Option<String>) {
+pub fn run(repo: CommentRepository, app_path: &str, addr: &str, origin: &Option<String>) {
     println!("Listening for requests at http://{}", addr);
-    gotham::start(addr, router(app_path, origin, repo));
+    gotham::start(addr.to_string(), router(app_path, origin, repo));
 }
 
-pub fn router(app_path: String, origin: Option<String>, repo: CommentRepository) -> Router {
+pub fn router(app_path: &str, origin: &Option<String>, repo: CommentRepository) -> Router {
     let pipeline1 = new_pipeline()
         .add(StateMiddleware::new(repo))
         .add(CorsMiddleware::new(origin))  // TODO: should only add middleware when needed
@@ -38,21 +38,21 @@ pub fn router(app_path: String, origin: Option<String>, repo: CommentRepository)
         route.get("/comments")
             .with_query_string_extractor::<CommentsQueryStringExtractor>()
             .to(get_comments);
-        route.post("/comments")
-            .to(post_comment);
         route.get("/comments/:id")
             .with_path_extractor::<IdParam>()
             .to(get_comment);
-        route.post("/preview")
-            .to(post_preview);
+        route.post("/comments")
+            .to(post_comment);
         route.options("/comments")
             .to(cors_preflight);
+        route.post("/preview")
+            .to(post_preview);
         route.options("/preview")
             .to(cors_preflight);
         route.get("/favicon.png")
             .to_file(&format!("{}/favicon.png", app_path));
         route.get("/app/*")
-            .to_dir(FileOptions::new(&app_path)
+            .to_dir(FileOptions::new(app_path)
                         .with_cache_control("no-cache")
                         .with_gzip(true)
                         .build(),
