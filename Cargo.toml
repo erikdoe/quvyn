@@ -23,3 +23,5 @@ hyper = "0.12"
 mime = "0.3"
 futures = "0.1"
 failure = "0.1"
+
+csv = "1.1"
