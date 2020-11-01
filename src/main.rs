@@ -18,7 +18,8 @@ fn main() {
     opts.optflag("", "reset", "Reset the repository. Or in other words, delete all comments. USE WITH EXTREME CAUTION!");
     opts.optopt("a", "app", &format!("Specify path for the frontend app. By default the app is assumed in {}.", DEFAULT_APP_PATH), "PATH");
     opts.optopt("b", "bind", &format!("Specify address and port for the server. By default the server binds to {}. ", DEFAULT_BIND_ADDR), "HOST:PORT");
-    opts.optopt("o", "origin", &format!("Specify an origin allowed for CORS. By default no origins are allowed."), "URL");
+    opts.optopt("o", "origin", &format!("Specify an origin allowed for CORS. By default no CORS headers are sent."), "URL");
+    opts.optopt("n", "notify", &format!("Specify an email address to be notified of new comments."), "EMAIL-ADDRESS");
     opts.optopt("", "import", &format!("Imports comments from a CSV file."), "PATH");
     opts.optflag("h", "help", "Display this help message");
 
@@ -39,12 +40,13 @@ fn main() {
     let app_path = matches.opt_get_default("app", String::from(DEFAULT_APP_PATH)).unwrap();
     let bind_addr = matches.opt_get_default("bind", String::from(DEFAULT_BIND_ADDR)).unwrap();
     let cors_origin = matches.opt_str("origin");
+    let notify_addr = matches.opt_str("notify");
     let csv_file = matches.opt_str("import");
 
     if let Some(filename) = csv_file {
         quvyn::import(repo_path, repo_reset, filename);
     } else {
-        quvyn::run(repo_path, repo_reset, app_path, bind_addr, cors_origin);
+        quvyn::run(repo_path, repo_reset, app_path, bind_addr, cors_origin, notify_addr);
     }
 
 }

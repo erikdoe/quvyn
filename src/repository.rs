@@ -10,12 +10,14 @@ use gotham_derive::*;
 use uuid::Uuid;
 
 use crate::comment::Comment;
+use crate::notifier::Notifier;
 use crate::utils;
 
 #[derive(Clone, StateData)]
 pub struct CommentRepository {
     path: String,
     comments: Arc<Mutex<Vec<Comment>>>,
+    notifier: Option<Notifier>
 }
 
 
@@ -24,12 +26,17 @@ impl CommentRepository {
         let repo = Self {
             path: path.to_owned(),
             comments: Arc::new(Mutex::new(Vec::new())),
+            notifier: None,
         };
         if reset {
             repo.remove_storage_directory();
         }
         repo.create_storage_directory();
         repo
+    }
+
+    pub fn set_notifier(&mut self, notifier: Notifier) {
+        self.notifier = Some(notifier)
     }
 
     pub fn all_comments(&self) -> Vec<Comment> {
@@ -92,6 +99,9 @@ impl CommentRepository {
         let mut file = File::create(&filename).expect(&format!("Failed to create file {}", &filename));
         let _result = file.write_all(utils::to_json(comment).as_ref());
         self.add_comment(comment); // TODO: there is no test to check that this happens after saving
+        if let Some(notifier) = &self.notifier {
+            notifier.notify(comment)
+        }
     }
 }
 
@@ -106,6 +116,7 @@ mod tests {
             CommentRepository {
                 path: "/r".to_owned(),
                 comments: Arc::new(Mutex::new(Vec::new())),
+                notifier: None,
             }
         }
     }
