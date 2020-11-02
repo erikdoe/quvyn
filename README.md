@@ -8,6 +8,27 @@ it stores comments in the filesystem where they can be processed with lots of Un
 technologies.
 
 
+## tl;dr
+
+Step 0: Install Rust toolchain (if needed)
+
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+Step 1: Clone Quvyn repo
+
+    git clone git@github.com:erikdoe/quvyn.git && cd quvyn
+
+Step 2: Build and run Quvyn
+
+    cargo run -- --repo ./var/demo
+
+Step 3: Demo time
+
+    open http://localhost:8080/app/demo.html
+
+Now you should see a page with a working commenting system. Play around. If you like what you see, read on.
+
+
 ## Installation
 
 The Quvyn backend is written in [Rust](https://www.rust-lang.org/). So, you need the Rust toolchain to build a binary 
