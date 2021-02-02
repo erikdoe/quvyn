@@ -64,6 +64,12 @@ impl CommentRepository {
         list.push(comment.clone());
     }
 
+    pub fn remove_comment(&self, comment: &Comment) -> bool {
+        let mut guard = self.comments.lock().unwrap();
+        let list = guard.borrow_mut();
+        list.iter().position(|c| c.id == comment.id).map(|c| list.remove(c)).is_some()
+    }
+
     fn create_storage_directory(&self) {
         fs::create_dir_all(&self.path).expect(&format!("Failed to create directory at {}", &self.path));
     }
@@ -103,6 +109,13 @@ impl CommentRepository {
             notifier.notify(comment)
         }
     }
+
+    pub fn delete_comment(&self, comment: &Comment) {
+        let filename = format!("{}/{}.json", self.path, comment.id.to_simple());
+        println!("Deleting comment in file: {}", filename);
+        std::fs::remove_file(&filename).expect(&format!("Failed to delete comment in file {}", &filename));
+        self.remove_comment(comment);
+    }
 }
 
 
@@ -130,6 +143,20 @@ mod tests {
         let list = repository.all_comments();
 
         assert_eq!(1, list.len());
+    }
+
+    #[test]
+    fn removing_comment_makes_it_unavailable_in_list() {
+        let repository = CommentRepository::for_testing();
+        let comment1 = Comment::new("/test-topic/", "First comment", None, None);
+        repository.add_comment(&comment1);
+        repository.add_comment(&Comment::new("/test-topic/", "Second comment", None, None));
+
+        repository.remove_comment(&comment1);
+
+        assert_eq!(1, repository.all_comments().len());
+        let found = repository.comment_with_id(comment1.id).is_some();
+        assert_eq!(false, found);
     }
 
     #[test]

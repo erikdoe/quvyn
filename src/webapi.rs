@@ -41,6 +41,9 @@ pub fn router(app_path: &str, origin: &Option<String>, repo: CommentRepository) 
         route.get("/comments/:id")
             .with_path_extractor::<IdParam>()
             .to(get_comment);
+        route.delete("/comments/:id")
+            .with_path_extractor::<IdParam>()
+            .to(delete_comment);
         route.post("/comments")
             .to(post_comment);
         route.options("/comments")
@@ -84,7 +87,20 @@ fn get_comment(mut state: State) -> (State, Response<Body>) {
 
     let response = match repository.comment_with_id(p.id) {
         Some(comment) => create_json_response(&state, StatusCode::OK, &comment).unwrap(),
-        None => create_response(&state, StatusCode::NOT_FOUND, mime::TEXT_PLAIN, "Not found")
+        None => create_response(&state, StatusCode::NOT_FOUND, mime::TEXT_PLAIN, "Comment not found")
+    };
+    (state, response)
+}
+
+
+fn delete_comment(mut state: State) -> (State, Response<Body>) {
+    let p = IdParam::take_from(&mut state);
+    let repository = CommentRepository::borrow_from(&state);
+    let response = if let Some(comment) = repository.comment_with_id(p.id) {
+        repository.delete_comment(&comment); // TODO: error handling?
+        create_response(&state, StatusCode::OK, mime::TEXT_PLAIN, "Deleted comment")
+    } else {
+        create_response(&state, StatusCode::NOT_FOUND, mime::TEXT_PLAIN, "Comment not found")
     };
     (state, response)
 }

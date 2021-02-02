@@ -8,13 +8,37 @@ Vue.component('qv-comment-section', {
     },
     methods: {
         postComment(comment) {
+            var location = null
             fetch(this.baseurl + '/comments', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json;charset=utf-8'},
                 body: JSON.stringify(comment)
             })
-                .then(response => response.json())
-                .then(json => this.comments.push(json) )
+                .then(response => {
+                    location = response.headers.get("location")
+                    return response.json()
+                })
+                .then(json => {
+                    localStorage.setItem(json.idh, location)
+                    this.comments.push(json)
+                })
+        },
+        deleteComment(idh) {
+            let location = localStorage.getItem(idh)
+            if (!location) {
+                return
+            }
+            fetch(this.baseurl + location, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (response.status === 200) {
+                        index = this.comments.findIndex(c => c.idh === idh)
+                        if (index > -1) {
+                            this.comments.splice(index, 1)
+                        }
+                    }
+                })
         },
         getPreview(markdown) {
             this.preview = "<i>(loading preview)</i>"
@@ -43,7 +67,7 @@ Vue.component('qv-comment-section', {
         <section class="qv-comment-section">
             <qv-heading :comments="comments"></qv-heading>
             <p v-if="this.comments.length === 0">No comments yet</p>
-            <qv-list :comments="comments"></qv-list>
+            <qv-list :comments="comments" @delete-comment="deleteComment"></qv-list>
             <qv-comment-editor :preview="preview" @post-comment="postComment" @get-preview="getPreview"></qv-comment-editor>
         </section>
     `
@@ -79,10 +103,17 @@ Vue.component('qv-list', {
             required: true
         }
     },
-
     filters: {
         formatTimestamp: function (text) {
             return luxon.DateTime.fromISO(text).toLocaleString(luxon.DateTime.DATETIME_MED)
+        }
+    },
+    methods: {
+        getFromStorage(key) {
+            return localStorage.getItem(key)
+        },
+        submitForm(idh) {
+            this.$emit('delete-comment', idh)
         }
     },
     template: `
@@ -101,42 +132,14 @@ Vue.component('qv-list', {
                     </div>
                 </div>
                 <div class="qv-text" v-html="comment.textHtml">
-               </div>
+                </div>
+                <div v-if="getFromStorage(comment.idh)">
+                    <form class="qv-delete-form" @submit.prevent="submitForm(comment.idh)">
+                        <input class="qv-submit" type="submit" value="Delete comment">
+                    </form>
+                </div>
             </li>
         </ul>
-    `
-})
-
-
-Vue.component('qv-comment', {
-    props: {
-        comment: {
-            type: Object,
-            required: true
-        }
-    },
-    filters: {
-        formatTimestamp: function (text) {
-            return luxon.DateTime.fromISO(text).toLocaleString(luxon.DateTime.DATETIME_MED)
-        }
-    },
-    template: `
-        <div>
-            <div class="qv-metadata">
-                <div class="qv-author-avatar">
-                    <img :src="comment.authorGravatar">
-                </div>
-                <div class="qv-author-name">
-                    <span v-if="comment.authorName">{{ comment.authorName }}</span>
-                    <span v-else class="qv-author-anonymous">Anonymous</span>
-                </div>
-                <div class="qv-timestamp">
-                    {{ comment.timestamp | formatTimestamp() }}
-                </div>
-            </div>
-            <div class="qv-text" v-html="comment.textHtml">
-           </div>
-        </div>
     `
 })
 
@@ -197,7 +200,8 @@ Vue.component('qv-comment-editor', {
             Fenced code blocks are supported.</p>
             <form class="qv-comment-editor-form" @submit.prevent="submitForm">
                 <input class="qv-input-field qv-author-name-field" id="name" v-model="name" placeholder="Your name (optional)"> 
-                <input class="qv-input-field qv-author-email-field" id="name" v-model="email" placeholder="Your email address (optional)"> 
+                <input class="qv-input-field qv-author-email-field" id="name" v-model="email" placeholder="Your email address (optional, for Gravatar
+ only)"> 
                 <div class="qv-text-editor">
                     <span class="qv-tab" :class="{ 'qv-active-tab': !showingPreview }" @click="showTextArea()">Write</span>
                     <span class="qv-tab" :class="{ 'qv-active-tab': showingPreview }" @click="showPreview()">Preview</span>
