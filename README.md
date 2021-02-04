@@ -107,4 +107,19 @@ text             | Comment text in markdown format
 Such a file can then be imported with the `--import` option. Note that you should specify the repo path, too.
 
 
+## Development
 
+### UI end-to-end tests
+
+The UI tests use [AVA](https://github.com/avajs/ava) as a test runner and [Playwright](https://playwright.dev) for 
+automated browser testing.
+
+For now, you have to start Quvyn manually before you run the UI tests:
+
+    cargo run -- --repo var/tests-ui
+
+Then, in a second terminal, run the tests:
+
+    npm test
+
+Don't forget to run `npm install` after checking out the code.
