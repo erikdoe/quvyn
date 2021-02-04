@@ -13,6 +13,8 @@ serde_derive = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "0.8", features = ["v4", "serde"] }
 getopts = "0.2"
+signal-hook = "0.3.4"
+
 gotham = "0.4"
 gotham_derive = "*"
 pulldown-cmark = "0.7"

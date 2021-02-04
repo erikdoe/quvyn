@@ -1,9 +1,10 @@
-use std::borrow::BorrowMut;
 use std::fs;
+use std::borrow::BorrowMut;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use glob::glob;
 use gotham_derive::*;
@@ -17,7 +18,8 @@ use crate::utils;
 pub struct CommentRepository {
     path: String,
     comments: Arc<Mutex<Vec<Comment>>>,
-    notifier: Option<Notifier>
+    notifier: Option<Notifier>,
+    should_reload: Arc<AtomicBool>,
 }
 
 
@@ -27,6 +29,7 @@ impl CommentRepository {
             path: path.to_owned(),
             comments: Arc::new(Mutex::new(Vec::new())),
             notifier: None,
+            should_reload: Arc::new(AtomicBool::new(false)),
         };
         if reset {
             repo.remove_storage_directory();
@@ -35,26 +38,33 @@ impl CommentRepository {
         repo
     }
 
+    pub fn set_reload_flag(&mut self, flag: &Arc<AtomicBool>) {
+        self.should_reload = Arc::clone(&flag);
+    }
+
     pub fn set_notifier(&mut self, notifier: Notifier) {
         self.notifier = Some(notifier)
     }
 
     pub fn all_comments(&self) -> Vec<Comment> {
+        self.reload_all_comments();
         let mut guard = self.comments.lock().unwrap();
         guard.borrow_mut().clone()
     }
 
     pub fn comment_with_id(&self, id: Uuid) -> Option<Comment> {
+        self.reload_all_comments();
         let mut guard = self.comments.lock().unwrap();
         let list = guard.borrow_mut();
         list.iter().filter(|c| c.id == id).map(|c| c.clone()).last() // TODO: improve
     }
 
     pub fn comments_for_path(&self, path: &str) -> Vec<Comment> {
+        self.reload_all_comments();
         let mut guard = self.comments.lock().unwrap();
         let list = guard.borrow_mut();
         let mut list: Vec<Comment> = list.iter().filter(|c| c.path == path).map(|c| c.clone()).collect();
-        list.sort_unstable_by_key(|c| c.timestamp );
+        list.sort_unstable_by_key(|c| c.timestamp);
         list
     }
 
@@ -70,6 +80,12 @@ impl CommentRepository {
         list.iter().position(|c| c.id == comment.id).map(|c| list.remove(c)).is_some()
     }
 
+    fn remove_all_comments(&self) {
+        let mut guard = self.comments.lock().unwrap();
+        let list = guard.borrow_mut();
+        list.clear();
+    }
+
     fn create_storage_directory(&self) {
         fs::create_dir_all(&self.path).expect(&format!("Failed to create directory at {}", &self.path));
     }
@@ -81,6 +97,14 @@ impl CommentRepository {
         fs::remove_dir_all(&self.path).expect(&format!("Failed to remove directory at {}", &self.path));
     }
 
+    fn reload_all_comments(&self) {
+        // TODO: this implementation is not entirely correct; another thread could see no comments
+        if self.should_reload.swap(false, Ordering::Relaxed) {
+            self.remove_all_comments();
+            self.load_all_comments();
+        }
+    }
+
     pub fn load_all_comments(&self) {
         for entry in glob(&format!("{}/*.json", self.path)).unwrap() {
             match entry {
@@ -90,7 +114,7 @@ impl CommentRepository {
         }
     }
 
-    pub fn load_comment(&self, path: &Path) {
+    fn load_comment(&self, path: &Path) {
         println!("Loading comment from file: {}", path.display());
         let mut file = File::open(path).expect(&format!("Failed to open file {}", path.display()));
         let mut contents = String::new();
@@ -121,8 +145,9 @@ impl CommentRepository {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::Duration;
+
+    use super::*;
 
     impl CommentRepository {
         fn for_testing() -> CommentRepository {
@@ -130,6 +155,7 @@ mod tests {
                 path: "/r".to_owned(),
                 comments: Arc::new(Mutex::new(Vec::new())),
                 notifier: None,
+                should_reload: Arc::new(AtomicBool::new(false)),
             }
         }
     }
@@ -203,5 +229,4 @@ mod tests {
         assert_eq!(list[1].text, "Second comment");
         assert_eq!(list[2].text, "Third comment");
     }
-
 }
