@@ -177,6 +177,7 @@ Vue.component('qv-comment-editor', {
                 this.email = null
                 this.markdown = null
                 this.error = null
+                this.showingPreview = false
             } else {
                 this.error = "Please write something before posting the comment."
             }
