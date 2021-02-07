@@ -1,0 +1,121 @@
+
+/* Colours */
+
+$bg-color: #30383A;
+$primary-color: #76A5AF;
+$accent-color: white;
+$text-color: #444;
+
+/* General typography and formatting */
+
+h1, h2, h3 {
+  font-family: "Lato", sans-serif;
+  font-weight:bold;
+  color: $text-color;
+}
+
+p, li, th, td, .button {
+  font-family: "Lato", sans-serif;
+  font-size: 13pt;
+  line-height: 1.5em;
+  color: $text-color;
+}
+
+/* Buttons */
+
+%button-base {
+  display: inline-block;
+  margin: 10px;
+  border-radius: 0.8em;
+  padding: .4em 1.2em;
+  vertical-align: middle;
+  text-align: center;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.button {
+  @extend %button-base;
+
+  color: white;
+  background: $primary-color linear-gradient(180deg, darken($primary-color, 0%), darken($primary-color, 10%)) repeat-x;
+  border: 3px solid darken($primary-color, 20%);
+
+  &:hover {
+    background: $primary-color linear-gradient(180deg, darken($primary-color, 5%), darken($primary-color, 15%)) repeat-x;
+    border-color: darken($primary-color, 25%);
+  }
+}
+
+.button-main {
+  @extend %button-base;
+
+  color: #444;
+  background: $accent-color linear-gradient(180deg, darken($accent-color, 0%), darken($accent-color, 10%)) repeat-x;
+  border: 3px solid darken($accent-color, 20%);
+
+  &:hover {
+    background: $accent-color linear-gradient(180deg, darken($accent-color, 10%), darken($accent-color, 20%)) repeat-x;
+    border-color: darken($accent-color, 30%);
+  }
+}
+
+/* Sections */
+
+#welcome {
+  width: 100%;
+  background: $bg-color;
+
+  .centered {
+    width: 100%;
+    min-height: calc(100vh - 4em);
+    display: flex;
+    align-items: center;
+    justify-content:center;
+  }
+
+  img {
+    width: 100%;
+    max-width: 1024px;
+  }
+
+  p {
+    margin: 0;
+    padding-bottom: 2.5em;
+    text-align: center;
+  }
+}
+
+#comments {
+  #quvyn {
+    max-width: 800px;
+    margin: 0 auto 3em auto;
+    padding: 0 8px;
+  }
+
+  .qv-heading {
+    margin-top: 0;
+    padding-top: 1em;
+  }
+}
+
+footer {
+  p {
+    margin: 0;
+    padding: 8px 8px;
+    text-align: center;
+    font-size: 10pt;
+  }
+}
+
+/* Misc */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+}
