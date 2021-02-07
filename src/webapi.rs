@@ -44,6 +44,8 @@ pub fn router(app_path: &str, origin: &Option<String>, repo: CommentRepository) 
         route.delete("/comments/:id")
             .with_path_extractor::<IdParam>()
             .to(delete_comment);
+        route.options("/comments/:id")
+            .to(cors_preflight);
         route.post("/comments")
             .to(post_comment);
         route.options("/comments")

@@ -32,6 +32,7 @@ impl Middleware for CorsMiddleware {
                     headers.insert("Access-Control-Allow-Origin", origin.parse().unwrap());
                     headers.insert("Access-Control-Allow-Methods", "*".parse().unwrap());
                     headers.insert("Access-Control-Allow-Headers", "*".parse().unwrap());
+                    headers.insert("Access-Control-Expose-Headers", "location".parse().unwrap());
                 }
             };
             future::ok((state, response))
