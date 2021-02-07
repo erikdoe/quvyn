@@ -44,6 +44,21 @@ li.qv-comment {
     line-height: 1.3em;
 }
 
+.qv-text pre code,
+.qv-text-preview pre code {
+    font-size: 0.9em;
+}
+
+.qv-text p,
+.qv-text-preview p {
+    margin-bottom: 0.2em;
+}
+
+.qv-text ul,
+.qv-text-preview ul {
+    margin-top: 0.2em;
+}
+
 .qv-text blockquote,
 .qv-text-preview blockquote {
     border-left: #AAA 4px solid;
@@ -120,12 +135,16 @@ li.qv-comment {
     margin-top: 0;
 }
 
+.qv-text-preview > p {
+    margin-bottom: 0.2em;
+}
+
 .qv-submit-error {
     margin-top: 0.5em;
     color: darkred;
 }
 
 .qv-submit {
-    margin-top: 1em;
+    margin-top: 1.5em;
     padding-top: 4px;
 }

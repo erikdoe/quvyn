@@ -70,7 +70,7 @@ p, li, th, td, .button {
 
   .centered {
     width: 100%;
-    min-height: calc(100vh - 4em);
+    min-height: calc(100vh - 5em);
     display: flex;
     align-items: center;
     justify-content:center;
@@ -83,8 +83,19 @@ p, li, th, td, .button {
 
   p {
     margin: 0;
-    padding-bottom: 2.5em;
+    padding-bottom: 1em;
     text-align: center;
+  }
+}
+
+#bubble {
+  background: $bg-color;
+
+  p {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 8px;
+    line-height: 0;
   }
 }
 
@@ -97,7 +108,7 @@ p, li, th, td, .button {
 
   .qv-heading {
     margin-top: 0;
-    padding-top: 1em;
+    padding-top: 0.8em;
   }
 }
 
