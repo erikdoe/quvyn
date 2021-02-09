@@ -1,9 +1,9 @@
 
 /* Colours */
 
-$bg-color: #30383A;
-$primary-color: #76A5AF;
-$accent-color: white;
+$bg-color: #5A7A8B;
+$primary-color: #95B3BF;
+$accent-color: #BFA004;
 $text-color: #444;
 
 /* General typography and formatting */
@@ -27,7 +27,7 @@ p, li, th, td, .button {
   display: inline-block;
   margin: 10px;
   border-radius: 0.8em;
-  padding: .4em 1.2em;
+  padding: .3em 1.1em;
   vertical-align: middle;
   text-align: center;
   white-space: nowrap;
@@ -40,25 +40,25 @@ p, li, th, td, .button {
   @extend %button-base;
 
   color: white;
-  background: $primary-color linear-gradient(180deg, darken($primary-color, 0%), darken($primary-color, 10%)) repeat-x;
-  border: 3px solid darken($primary-color, 20%);
+  background: $primary-color linear-gradient(180deg, lighten($primary-color, 2%), darken($primary-color, 8%)) repeat-x;
+  border: 3px solid darken($primary-color, 10%);
 
   &:hover {
-    background: $primary-color linear-gradient(180deg, darken($primary-color, 5%), darken($primary-color, 15%)) repeat-x;
-    border-color: darken($primary-color, 25%);
+    background: $primary-color linear-gradient(180deg, lighten($primary-color, 7%), darken($primary-color, 3%)) repeat-x;
+    border-color: darken($primary-color, 5%);
   }
 }
 
 .button-main {
   @extend %button-base;
 
-  color: #444;
-  background: $accent-color linear-gradient(180deg, darken($accent-color, 0%), darken($accent-color, 10%)) repeat-x;
-  border: 3px solid darken($accent-color, 20%);
+  color: white;
+  background: $accent-color linear-gradient(180deg, lighten($accent-color, 4%), darken($accent-color, 3%)) repeat-x;
+  border: 3px solid darken($accent-color, 6%);
 
   &:hover {
-    background: $accent-color linear-gradient(180deg, darken($accent-color, 10%), darken($accent-color, 20%)) repeat-x;
-    border-color: darken($accent-color, 30%);
+    background: $accent-color linear-gradient(180deg, lighten($accent-color, 9%), darken($accent-color, 0%)) repeat-x;
+    border-color: darken($accent-color, 3%);
   }
 }
 
@@ -78,7 +78,7 @@ p, li, th, td, .button {
 
   img {
     width: 100%;
-    max-width: 1024px;
+    max-width: 960px;
   }
 
   p {
