@@ -1,7 +1,7 @@
 {
   "devDependencies": {
     "ava": "^3.15.0",
-    "playwright-webkit": "^1.12.3"
+    "playwright-webkit": "^1.16.0"
   },
   "scripts": {
     "pretest": "find var/tests-ui -name \"*.json\" -exec rm {} \\; && killall -HUP quvyn",
