@@ -21,7 +21,7 @@ pulldown-cmark = "0.7"
 ammonia = "3.1"
 gravatar = "0.2.0"
 
-hyper = "0.12"
+hyper = "0.14"
 mime = "0.3"
 futures = "0.1"
 failure = "0.1"
