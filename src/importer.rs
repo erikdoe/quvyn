@@ -1,8 +1,8 @@
-use std::error::Error;
+ use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 
-use serde::Deserialize;
+use serde_derive::Deserialize;
 
 use crate::comment::Comment;
 use crate::repository::CommentRepository;

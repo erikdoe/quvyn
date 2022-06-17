@@ -124,7 +124,7 @@ impl CommentRepository {
     }
 
     pub fn save_comment(&self, comment: &Comment) {
-        let filename = format!("{}/{}.json", self.path, comment.id.to_simple());
+        let filename = format!("{}/{}.json", self.path, comment.id.as_simple());
         println!("Saving comment to file: {}", filename);
         let mut file = File::create(&filename).expect(&format!("Failed to create file {}", &filename));
         let _result = file.write_all(utils::to_json(comment).as_ref());
@@ -135,7 +135,7 @@ impl CommentRepository {
     }
 
     pub fn delete_comment(&self, comment: &Comment) {
-        let filename = format!("{}/{}.json", self.path, comment.id.to_simple());
+        let filename = format!("{}/{}.json", self.path, comment.id.as_simple());
         println!("Deleting comment in file: {}", filename);
         std::fs::remove_file(&filename).expect(&format!("Failed to delete comment in file {}", &filename));
         self.remove_comment(comment);

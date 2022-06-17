@@ -115,7 +115,7 @@ fn it_returns_400_when_text_parses_into_nothing() {
 #[test]
 fn it_returns_404_for_non_existing_comment() {
     let client = client(repo("it_returns_404_for_non_existing_comments"));
-    let location = format!("/comments/{}", Uuid::new_v4().to_simple());
+    let location = format!("/comments/{}", Uuid::new_v4().as_simple());
 
     let response = client.get(url(&location)).perform().unwrap();
 
@@ -128,7 +128,7 @@ fn it_delete_comment_and_not_found_by_id() {
     let comment = &Comment::new("/", "First comment", None, None);
     repo.save_comment(comment);
     let client = client(repo);
-    let location = format!("/comments/{}", comment.id.to_simple());
+    let location = format!("/comments/{}", comment.id.as_simple());
 
     let response = client.delete(&url(&location)).perform().unwrap();
     assert_eq!(200, response.status());
@@ -140,7 +140,7 @@ fn it_delete_comment_and_not_found_by_id() {
 #[test]
 fn it_returns_404_for_non_existing_comment_when_deleting() {
     let client = client(repo("it_returns_404_for_non_existing_comment_when_deleting"));
-    let location = format!("/comments/{}", Uuid::new_v4().to_simple());
+    let location = format!("/comments/{}", Uuid::new_v4().as_simple());
 
     let response = client.delete(url(&location)).perform().unwrap();
 
