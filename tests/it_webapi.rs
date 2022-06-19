@@ -1,5 +1,4 @@
 extern crate gotham;
-extern crate hyper;
 extern crate quvyn;
 extern crate serde_json;
 

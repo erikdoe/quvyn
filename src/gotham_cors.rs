@@ -1,9 +1,7 @@
-use futures::prelude::*;
-
+use std::pin::Pin;
 use gotham::handler::HandlerFuture;
 use gotham::middleware::Middleware;
 use gotham::state::State;
-use futures::future;
 
 
 #[derive(Clone, NewMiddleware)]
@@ -20,24 +18,23 @@ impl CorsMiddleware {
 }
 
 impl Middleware for CorsMiddleware {
-    fn call<Chain>(self, state: State, chain: Chain) -> Box<HandlerFuture>
+    fn call<Chain>(self, state: State, chain: Chain) -> Pin<Box<HandlerFuture>>
         where
-            Chain: FnOnce(State) -> Box<HandlerFuture>,
+            Chain: FnOnce(State) -> Pin<Box<HandlerFuture>>,
     {
         let result = chain(state);
-        let f = result.and_then(move |(state, mut response)| {
-            {
-                if let Some(origin) = self.origin {
-                    let headers = response.headers_mut();
-                    headers.insert("Access-Control-Allow-Origin", origin.parse().unwrap());
-                    headers.insert("Access-Control-Allow-Methods", "*".parse().unwrap());
-                    headers.insert("Access-Control-Allow-Headers", "*".parse().unwrap());
-                    headers.insert("Access-Control-Expose-Headers", "location".parse().unwrap());
-                }
+        let f = async move {
+            let (state, mut response) = result.await?;
+            if let Some(origin) = self.origin {
+                let headers = response.headers_mut();
+                headers.insert("Access-Control-Allow-Origin", origin.parse().unwrap());
+                headers.insert("Access-Control-Allow-Methods", "*".parse().unwrap());
+                headers.insert("Access-Control-Allow-Headers", "*".parse().unwrap());
+                headers.insert("Access-Control-Expose-Headers", "location".parse().unwrap());
             };
-            future::ok((state, response))
-        });
+            Ok((state, response))
+        };
 
-        Box::new(f)
+        Box::pin(f)
     }
 }

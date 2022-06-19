@@ -1,29 +1,29 @@
+use std::pin::Pin;
 use chrono::{DateTime, Utc};
-use gotham::handler::assets::FileOptions;
+use futures_util::{future, FutureExt};
 use gotham::handler::HandlerFuture;
+use gotham::handler::FileOptions;
 use gotham::helpers::http::response::create_response;
 use gotham::middleware::state::StateMiddleware;
-use gotham::pipeline;
+use gotham::pipeline::{new_pipeline, single_pipeline};
 use gotham::router::builder::{build_router, DrawRoutes};
 use gotham::router::builder::DefineSingleRoute;
 use gotham::router::Router;
 use gotham::state::{FromState, State};
-use gotham_derive::*;
-use hyper::{Body, Response, StatusCode, Uri};
-use hyper::rt::Future;
+use gotham::prelude::*;
+use gotham::hyper::{Body, Response, StatusCode, Uri};
 use serde_derive::*;
 use uuid::Uuid;
 
 use crate::comment::Comment;
-use crate::gotham_json::{create_json_response, create_json_response_with_headers, JSONBody};
+use crate::gotham_json::{create_json_response, create_json_response_with_headers, get_json_body};
 use crate::markdown::md_to_html;
 use crate::repository::CommentRepository;
-use gotham::pipeline::new_pipeline;
 use crate::gotham_cors::CorsMiddleware;
 
 pub fn run(repo: CommentRepository, app_path: &str, addr: &str, origin: &Option<String>) {
     println!("Listening for requests at http://{}", addr);
-    gotham::start(addr.to_string(), router(app_path, origin, repo));
+    let _ = gotham::start(addr.to_string(), router(app_path, origin, repo));
 }
 
 pub fn router(app_path: &str, origin: &Option<String>, repo: CommentRepository) -> Router {
@@ -31,7 +31,7 @@ pub fn router(app_path: &str, origin: &Option<String>, repo: CommentRepository) 
         .add(StateMiddleware::new(repo))
         .add(CorsMiddleware::new(origin))  // TODO: should only add middleware when needed
         .build();
-    let (chain, pipelines) = pipeline::single::single_pipeline(pipeline1);
+    let (chain, pipelines) = single_pipeline(pipeline1);
     build_router(chain, pipelines, |route| {
         route.get("/ping")
             .to(get_ping);
@@ -126,21 +126,46 @@ impl CommentPostDoc {
     }
 }
 
-fn post_comment(state: State) -> Box<HandlerFuture> {
-    Box::new(state.json::<CommentPostDoc>().and_then(|(state, doc)| {
-        let comment = doc.to_comment();
-        let response = if comment.text_html == "" {
-            create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "No visible text")
-        } else {
-            CommentRepository::borrow_from(&state).save_comment(&comment);
-            let location = format!("{}/{}", Uri::borrow_from(&state), comment.id);
-            let headers = vec![("Location", location)].into_iter().collect(); // TODO: better way?
-            let resp_doc = CommentDisplayDoc::from_comment(&comment);
-            create_json_response_with_headers(&state, StatusCode::CREATED, headers, &resp_doc).unwrap()
+// fn post_comment(state: State) -> Box<HandlerFuture> {
+//     Box::new(state.json::<CommentPostDoc>().and_then(|(state, doc)| {
+//         let comment = doc.to_comment();
+//         let response = if comment.text_html == "" {
+//             create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "No visible text")
+//         } else {
+//             CommentRepository::borrow_from(&state).save_comment(&comment);
+//             let location = format!("{}/{}", Uri::borrow_from(&state), comment.id);
+//             let headers = vec![("Location", location)].into_iter().collect(); // TODO: better way?
+//             let resp_doc = CommentDisplayDoc::from_comment(&comment);
+//             create_json_response_with_headers(&state, StatusCode::CREATED, headers, &resp_doc).unwrap()
+//         };
+//         Ok((state, response))
+//     }))
+// }
+
+fn post_comment(mut state: State) -> Pin<Box<HandlerFuture>> {
+    let f = get_json_body::<CommentPostDoc>(&mut state).then(|result| {
+        let response = match result {
+            Ok(doc) => {
+                let comment = doc.to_comment();
+                if comment.text_html == "" {
+                    create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "No visible text")
+                } else {
+                    CommentRepository::borrow_from(&state).save_comment(&comment);
+                    let location = format!("{}/{}", Uri::borrow_from(&state), comment.id);
+                    let headers = vec![("Location", location)].into_iter().collect(); // TODO: better way?
+                    let resp_doc = CommentDisplayDoc::from_comment(&comment);
+                    create_json_response_with_headers(&state, StatusCode::CREATED, headers, &resp_doc).unwrap()
+                }
+            }
+            Err(_) => {
+                create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "Invalid JSON")
+            }
         };
-        Ok((state, response))
-    }))
+        future::ok((state, response))
+    });
+    f.boxed()
 }
+
 
 
 #[derive(Deserialize, StateData, StaticResponseExtender)]
@@ -200,12 +225,28 @@ struct CommentPreviewDoc {
     text: String,
 }
 
-fn post_preview(state: State) -> Box<HandlerFuture> {
-    Box::new(state.json::<CommentPreviewDoc>().and_then(|(state, doc)| {
-        let body = md_to_html(&doc.text);
-        let response = create_response(&state, StatusCode::OK, mime::TEXT_HTML, body);
-        Ok((state, response))
-    }))
+// fn post_preview(state: State) -> Box<HandlerFuture> {
+//     Box::new(state.json::<CommentPreviewDoc>().and_then(|(state, doc)| {
+//         let body = md_to_html(&doc.text);
+//         let response = create_response(&state, StatusCode::OK, mime::TEXT_HTML, body);
+//         Ok((state, response))
+//     }))
+// }
+
+fn post_preview(mut state: State) -> Pin<Box<HandlerFuture>> {
+    let f = get_json_body::<CommentPreviewDoc>(&mut state).then(|result| {
+        let response = match result {
+            Ok(doc) => {
+                let body = md_to_html(&doc.text);
+                create_response(&state, StatusCode::OK, mime::TEXT_HTML, body)
+            },
+            Err(_) => {
+                create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "Invalid JSON")
+            }
+        };
+        future::ok((state, response))
+    });
+    f.boxed()
 }
 
 

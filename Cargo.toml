@@ -15,15 +15,13 @@ uuid = { version = "1.1.2", features = ["v4", "serde"] }
 getopts = "0.2"
 signal-hook = "0.3.4"
 
-gotham = "0.4"
-gotham_derive = "*"
+gotham = "0.7.1"
+gotham_derive = "0.7"
 pulldown-cmark = "0.9.1"
 ammonia = "3.1"
 gravatar = "0.2.0"
-
-hyper = "0.12.36"
-mime = "0.3"
-futures = "0.1"
-failure = "0.1"
-
 csv = "1.1"
+
+mime = "0.3"
+futures-util = "0.3.14"
+
