@@ -1,6 +1,6 @@
 use std::pin::Pin;
 use chrono::{DateTime, Utc};
-use futures_util::{future, FutureExt};
+use futures_util::{future, FutureExt, TryFutureExt};
 use gotham::handler::HandlerFuture;
 use gotham::handler::FileOptions;
 use gotham::helpers::http::response::create_response;
@@ -16,7 +16,7 @@ use serde_derive::*;
 use uuid::Uuid;
 
 use crate::comment::Comment;
-use crate::gotham_json::{create_json_response, create_json_response_with_headers, get_json_body};
+use crate::gotham_json::{create_json_response, create_json_response_with_headers, take_json_body};
 use crate::markdown::md_to_html;
 use crate::repository::CommentRepository;
 use crate::gotham_cors::CorsMiddleware;
@@ -126,40 +126,18 @@ impl CommentPostDoc {
     }
 }
 
-// fn post_comment(state: State) -> Box<HandlerFuture> {
-//     Box::new(state.json::<CommentPostDoc>().and_then(|(state, doc)| {
-//         let comment = doc.to_comment();
-//         let response = if comment.text_html == "" {
-//             create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "No visible text")
-//         } else {
-//             CommentRepository::borrow_from(&state).save_comment(&comment);
-//             let location = format!("{}/{}", Uri::borrow_from(&state), comment.id);
-//             let headers = vec![("Location", location)].into_iter().collect(); // TODO: better way?
-//             let resp_doc = CommentDisplayDoc::from_comment(&comment);
-//             create_json_response_with_headers(&state, StatusCode::CREATED, headers, &resp_doc).unwrap()
-//         };
-//         Ok((state, response))
-//     }))
-// }
 
-fn post_comment(mut state: State) -> Pin<Box<HandlerFuture>> {
-    let f = get_json_body::<CommentPostDoc>(&mut state).then(|result| {
-        let response = match result {
-            Ok(doc) => {
-                let comment = doc.to_comment();
-                if comment.text_html == "" {
-                    create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "No visible text")
-                } else {
-                    CommentRepository::borrow_from(&state).save_comment(&comment);
-                    let location = format!("{}/{}", Uri::borrow_from(&state), comment.id);
-                    let headers = vec![("Location", location)].into_iter().collect(); // TODO: better way?
-                    let resp_doc = CommentDisplayDoc::from_comment(&comment);
-                    create_json_response_with_headers(&state, StatusCode::CREATED, headers, &resp_doc).unwrap()
-                }
-            }
-            Err(_) => {
-                create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "Invalid JSON")
-            }
+fn post_comment(state: State) -> Pin<Box<HandlerFuture>> {
+    let f = take_json_body::<CommentPostDoc>(state).and_then(|(state, doc)| {
+        let comment = doc.to_comment();
+        let response = if comment.text_html == "" {
+            create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "No visible text")
+        } else {
+            CommentRepository::borrow_from(&state).save_comment(&comment);
+            let location = format!("{}/{}", Uri::borrow_from(&state), comment.id);
+            let headers = vec![("Location", location)].into_iter().collect(); // TODO: better way?
+            let resp_doc = CommentDisplayDoc::from_comment(&comment);
+            create_json_response_with_headers(&state, StatusCode::CREATED, headers, &resp_doc).unwrap()
         };
         future::ok((state, response))
     });
@@ -225,25 +203,10 @@ struct CommentPreviewDoc {
     text: String,
 }
 
-// fn post_preview(state: State) -> Box<HandlerFuture> {
-//     Box::new(state.json::<CommentPreviewDoc>().and_then(|(state, doc)| {
-//         let body = md_to_html(&doc.text);
-//         let response = create_response(&state, StatusCode::OK, mime::TEXT_HTML, body);
-//         Ok((state, response))
-//     }))
-// }
-
-fn post_preview(mut state: State) -> Pin<Box<HandlerFuture>> {
-    let f = get_json_body::<CommentPreviewDoc>(&mut state).then(|result| {
-        let response = match result {
-            Ok(doc) => {
-                let body = md_to_html(&doc.text);
-                create_response(&state, StatusCode::OK, mime::TEXT_HTML, body)
-            },
-            Err(_) => {
-                create_response(&state, StatusCode::BAD_REQUEST, mime::TEXT_PLAIN, "Invalid JSON")
-            }
-        };
+fn post_preview(state: State) -> Pin<Box<HandlerFuture>> {
+    let f = take_json_body::<CommentPreviewDoc>(state).and_then(|(state, doc)| {
+        let body = md_to_html(&doc.text);
+        let response = create_response(&state, StatusCode::OK, mime::TEXT_HTML, body);
         future::ok((state, response))
     });
     f.boxed()
