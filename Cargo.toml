@@ -18,7 +18,7 @@ signal-hook = "0.3.4"
 gotham = "0.7.1"
 gotham_derive = "0.7"
 pulldown-cmark = "0.9.1"
-ammonia = "3.1"
+ammonia = "3.3"
 gravatar = "0.2.0"
 csv = "1.1"
 
